@@ -15,7 +15,7 @@ use rand::{CryptoRng, Rng};
 
 use super::sumcheck::zk_data::ZKSumcheckData;
 
-pub(crate) struct SmallSubgroupIPAProver<P: Pairing> {
+pub struct SmallSubgroupIPAProver<P: Pairing> {
     interpolation_domain: Vec<P::ScalarField>,
     concatenated_polynomial: Polynomial<P::ScalarField>,
     libra_concatenated_lagrange_form: Polynomial<P::ScalarField>,
@@ -43,7 +43,7 @@ impl<P: HonkCurve<TranscriptFieldType>> SmallSubgroupIPAProver<P> {
     // Length of the big sum identity polynomial C. It is equal to the length of the highest degree term X * F(X) * G(X)
     const GRAND_SUM_IDENTITY_LENGTH: usize =
         Self::MASKED_CONCATENATED_WITNESS_LENGTH + Self::SUBGROUP_SIZE;
-    pub(crate) fn new<H: TranscriptHasher<TranscriptFieldType>, R: Rng + CryptoRng>(
+    pub fn new<H: TranscriptHasher<TranscriptFieldType>, R: Rng + CryptoRng>(
         zk_sumcheck_data: ZKSumcheckData<P>,
         multivariate_challenge: &[P::ScalarField],
         claimed_ipa_eval: P::ScalarField,
@@ -302,7 +302,7 @@ impl<P: HonkCurve<TranscriptFieldType>> SmallSubgroupIPAProver<P> {
     }
 
     // Getter to pass the witnesses to ShpleminiProver. Big sum polynomial is evaluated at 2 points (and is small)
-    pub(crate) fn into_witness_polynomials(self) -> [Polynomial<P::ScalarField>; 4] {
+    pub fn into_witness_polynomials(self) -> [Polynomial<P::ScalarField>; 4] {
         [
             self.concatenated_polynomial,
             self.grand_sum_polynomial.to_owned(),

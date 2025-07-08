@@ -19,13 +19,13 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha12Rng;
 use std::marker::PhantomData;
 
-pub(crate) struct Decider<
+pub struct Decider<
     P: HonkCurve<TranscriptFieldType>,
     H: TranscriptHasher<TranscriptFieldType>,
     L: PlainProverFlavour,
 > {
-    pub(super) memory: ProverMemory<P, L>,
-    pub(super) rng: ChaCha12Rng,
+    pub memory: ProverMemory<P, L>,
+    pub rng: ChaCha12Rng,
     pub(crate) has_zk: ZeroKnowledge,
     phantom_data: PhantomData<P>,
     phantom_hasher: PhantomData<H>,

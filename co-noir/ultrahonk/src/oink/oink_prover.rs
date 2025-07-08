@@ -488,7 +488,9 @@ impl<
             .resize(proving_key.circuit_size as usize, P::ScalarField::zero());
 
         // For Ultra/Mega, the first row is an inactive zero row thus the grand prod takes value 1 at both i = 0 and i = 1
-        self.memory.z_perm[1] = P::ScalarField::one();
+        if L::FLAVOUR == Flavour::Ultra || L::FLAVOUR == Flavour::Mega {
+            self.memory.z_perm[1] = P::ScalarField::one();
+        }
 
         // Compute grand product values corresponding only to the active regions of the trace
         for i in 0..active_domain_size - 1 {

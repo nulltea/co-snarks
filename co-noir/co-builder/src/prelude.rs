@@ -7,7 +7,9 @@ pub use crate::keys::proving_key::ProvingKey;
 pub use crate::keys::verification_key::{
     PublicComponentKey, VerifyingKey, VerifyingKeyBarretenberg,
 };
-pub use crate::polynomials::polynomial::{NUM_MASKED_ROWS, Polynomial, RowDisablingPolynomial};
+pub use crate::polynomials::polynomial::{
+    NUM_DISABLED_ROWS_IN_SUMCHECK, NUM_MASKED_ROWS, Polynomial, RowDisablingPolynomial,
+};
 pub use crate::polynomials::polynomial_types::Polynomials;
 pub use crate::serialize::{Serialize, SerializeP};
 pub use crate::types::aes128::AES128_SBOX;

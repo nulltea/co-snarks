@@ -12,7 +12,7 @@ pub(crate) struct ShpleminiVerifierOpeningClaim<P: Pairing> {
     pub(crate) commitments: Vec<P::G1Affine>,
 }
 #[derive(Clone)]
-pub(crate) struct ShpleminiOpeningClaim<F: PrimeField> {
+pub struct ShpleminiOpeningClaim<F: PrimeField> {
     pub(crate) polynomial: Polynomial<F>,
     pub(crate) opening_pair: OpeningPair<F>,
     pub(crate) gemini_fold: bool,
