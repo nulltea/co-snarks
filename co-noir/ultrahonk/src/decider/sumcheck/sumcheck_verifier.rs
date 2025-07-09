@@ -1,12 +1,13 @@
 use super::SumcheckVerifierOutput;
 use crate::CONST_PROOF_SIZE_LOG_N;
 use crate::{
-    decider::{sumcheck::round_verifier::SumcheckVerifierRound, verifier::DeciderVerifier},
+    decider::{
+        decider_verifier::DeciderVerifier, sumcheck::sumcheck_round_verifier::SumcheckVerifierRound,
+    },
     plain_prover_flavour::PlainProverFlavour,
     prelude::GateSeparatorPolynomial,
     transcript::{Transcript, TranscriptHasher},
-    // types::NUM_ALL_ENTITIES,
-    verifier::HonkVerifyResult,
+    ultra_verifier::HonkVerifyResult,
 };
 use ark_ff::{One, Zero};
 use co_builder::prelude::{HonkCurve, ZeroKnowledge};
