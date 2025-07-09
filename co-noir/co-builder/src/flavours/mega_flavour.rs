@@ -10,9 +10,7 @@ use crate::{
     prover_flavour::{Flavour, ProverFlavour},
 };
 #[derive(Default)]
-pub struct MegaFlavour {
-    // phantom_data: PhantomData<F>,
-}
+pub struct MegaFlavour {}
 impl ProverFlavour for MegaFlavour {
     type ProverWitnessEntities<T: Default + std::marker::Sync> = MegaProverWitnessEntities<T>;
     type ShiftedWitnessEntities<T: Default + std::marker::Sync> = MegaShiftedWitnessEntities<T>; //This is the same for Mega and Mega

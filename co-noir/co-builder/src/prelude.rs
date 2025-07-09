@@ -10,7 +10,10 @@ pub use crate::keys::verification_key::{
 pub use crate::polynomials::polynomial::{
     NUM_DISABLED_ROWS_IN_SUMCHECK, NUM_MASKED_ROWS, Polynomial, RowDisablingPolynomial,
 };
-pub use crate::polynomials::polynomial_types::Polynomials;
+pub use crate::polynomials::polynomial_types::{
+    Polynomials, PrecomputedEntities, ProverWitnessEntities, ShiftedWitnessEntities,
+    WitnessEntities,
+};
 pub use crate::serialize::{Serialize, SerializeP};
 pub use crate::types::aes128::AES128_SBOX;
 pub use crate::types::types::{

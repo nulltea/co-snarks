@@ -2,7 +2,9 @@ pub use crate::decider::barycentric::Barycentric;
 pub use crate::decider::decider_prover::Decider;
 pub use crate::decider::small_subgroup_ipa::SmallSubgroupIPAProver;
 pub use crate::decider::sumcheck::{SumcheckOutput, zk_data::ZKSumcheckData};
-pub use crate::decider::types::{GateSeparatorPolynomial, RelationParameters};
+pub use crate::decider::types::{
+    ClaimedEvaluations, GateSeparatorPolynomial, ProverUnivariates, RelationParameters,
+};
 pub use crate::decider::univariate::Univariate;
 pub use crate::transcript::Poseidon2Sponge;
 pub use crate::transcript::{Transcript, TranscriptHasher};

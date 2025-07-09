@@ -25,12 +25,11 @@ pub(crate) struct VerifierMemory<P: Pairing, L: PlainProverFlavour> {
     pub(crate) claimed_evaluations: ClaimedEvaluations<P::ScalarField, L>,
 }
 
-pub(crate) type ProverUnivariates<F, L> =
-    AllEntities<<L as PlainProverFlavour>::ProverUnivariate<F>, L>;
+pub type ProverUnivariates<F, L> = AllEntities<<L as PlainProverFlavour>::ProverUnivariate<F>, L>;
 pub(crate) type ProverUnivariatesSized<F, L, const SIZE: usize> =
     AllEntities<Univariate<F, SIZE>, L>;
 pub(crate) type PartiallyEvaluatePolys<F, L> = AllEntities<Vec<F>, L>;
-pub(crate) type ClaimedEvaluations<F, L> = AllEntities<F, L>;
+pub type ClaimedEvaluations<F, L> = AllEntities<F, L>;
 pub(crate) type VerifierCommitments<P, L> = AllEntities<P, L>;
 
 pub struct RelationParameters<F: PrimeField, L: PlainProverFlavour> {
