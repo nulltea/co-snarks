@@ -410,7 +410,7 @@ impl<P: Pairing> ECCOpQueue<P> {
         self.ultra_ops_table.current_ultra_subtable_size()
     }
 
-    // TODO(https://github.com/AztecProtocol/barretenberg/issues/1339): Consider making the ultra and eccvm ops getters
+    // AZTEC TODO(https://github.com/AztecProtocol/barretenberg/issues/1339): Consider making the ultra and eccvm ops getters
     // more memory efficient
 
     // Get the full table of ECCVM ops in contiguous memory; construct it if it has not been constructed already
@@ -461,7 +461,7 @@ impl<P: Pairing> ECCOpQueue<P> {
         self.accumulator
     }
 
-    /**
+    /*
      * @brief Write point addition op to queue and natively perform addition
      *
      * @param to_add
@@ -484,7 +484,7 @@ impl<P: Pairing> ECCOpQueue<P> {
     //     self.construct_and_populate_ultra_ops(op_code, to_add, &P::ScalarField::zero())
     // }
 
-    /**
+    /*
      * @brief Write multiply and add op to queue and natively perform operation
      *
      * @param to_add
@@ -512,7 +512,7 @@ impl<P: Pairing> ECCOpQueue<P> {
     //     ultra_op
     // }
 
-    /**
+    /*
      * @brief Writes a no op (i.e. two zero rows) to the ultra ops table but adds no eccvm operations.
      *
      * @details We want to be able to add zero rows (and, eventually, random rows
@@ -530,7 +530,7 @@ impl<P: Pairing> ECCOpQueue<P> {
     //     )
     // }
 
-    /**
+    /*
      * @brief Write equality op using internal accumulator point
      *
      * @return current internal accumulator point (prior to reset to 0)

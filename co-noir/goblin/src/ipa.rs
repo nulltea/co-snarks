@@ -1,7 +1,7 @@
 use ark_ec::pairing::Pairing;
 use ark_ff::{Field, Zero};
 use co_builder::{
-    TranscriptFieldType,
+    HonkProofResult, TranscriptFieldType,
     prelude::{HonkCurve, ProverCrs},
 };
 use ultrahonk::Utils as UltraHonkUtils;
@@ -16,7 +16,7 @@ pub(crate) fn compute_ipa_opening_proof<
     transcript: &mut Transcript<TranscriptFieldType, H>,
     opening_claim: ShpleminiOpeningClaim<<P as Pairing>::ScalarField>,
     commitment_key: &ProverCrs<P>,
-) {
+) -> HonkProofResult<()> {
     // AZTEC TODO(https://github.com/AztecProtocol/barretenberg/issues/1150): Hash more things here.
     // Step 1.
     // Send polynomial degree + 1 = d to the verifier
@@ -95,8 +95,7 @@ pub(crate) fn compute_ipa_opening_proof<
         l_i = UltraHonkUtils::msm::<P>(
             &a_vec.coefficients[0..round_size],
             &g_vec_local[round_size..2 * round_size],
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        )?;
 
         l_i += aux_generator * inner_prod_l;
 
@@ -105,8 +104,7 @@ pub(crate) fn compute_ipa_opening_proof<
         r_i = UltraHonkUtils::msm::<P>(
             &a_vec.coefficients[round_size..2 * round_size],
             &g_vec_local[0..round_size],
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        )?;
         r_i += aux_generator * inner_prod_r;
 
         // Step 6.c
@@ -122,7 +120,9 @@ pub(crate) fn compute_ipa_opening_proof<
         if round_challenge.is_zero() {
             panic!("IPA round challenge is zero");
         }
-        let round_challenge_inv = round_challenge.inverse().unwrap();
+        let round_challenge_inv = round_challenge
+            .inverse()
+            .expect("IPA round challenge should not be zero");
 
         // Step 6.e
         // G_vec_new = G_vec_lo + G_vec_hi * round_challenge_inv
@@ -145,6 +145,7 @@ pub(crate) fn compute_ipa_opening_proof<
             b_vec[j] += tmp * round_challenge_inv;
         }
     }
+    Ok(())
 }
 
 // // For dummy rounds, send commitments of zero()

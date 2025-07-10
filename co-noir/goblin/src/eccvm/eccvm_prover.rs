@@ -6,6 +6,7 @@ use ark_ff::Field;
 use ark_ff::One;
 use ark_ff::PrimeField;
 use ark_ff::Zero;
+use co_builder::HonkProofError;
 use co_builder::flavours::eccvm_flavour::ECCVMFlavour;
 use co_builder::polynomials::polynomial_flavours::PrecomputedEntitiesFlavour;
 use co_builder::polynomials::polynomial_flavours::ProverWitnessEntitiesFlavour;
@@ -45,6 +46,8 @@ struct Eccvm<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFi
     memory: ProverMemory<P>, //This is somewhat equivalent to the Oink Memory (i.e stores the lookup_inverses and z_perm)
 }
 
+// BIG TODO FLORIN: we still need to think about how to do all this with Grumpkin (also different crs)
+// This happens when we construct the eccvm prover from the eccopqueue
 impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>> Eccvm<P, H> {
     /// A uniform method to mask, commit, and send the corresponding commitment to the verifier.
     fn commit_to_witness_polynomial(
@@ -77,15 +80,15 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         self.execute_log_derivative_commitments_round(&mut transcript, proving_key);
         self.execute_grand_product_computation_round(&mut transcript, proving_key);
         let (sumcheck_output, zk_sumcheck_data) =
-            self.execute_relation_check_rounds(&mut transcript, &proving_key.crs, circuit_size);
-        //TODO FLORIN REMOVE UNWRAP
+            self.execute_relation_check_rounds(&mut transcript, &proving_key.crs, circuit_size)?;
+
         let ipa_transcript = self.execute_pcs_rounds(
             sumcheck_output,
             zk_sumcheck_data,
             &mut transcript,
             proving_key,
             circuit_size,
-        );
+        )?;
 
         Ok((transcript.get_proof(), ipa_transcript.get_proof()))
     }
@@ -94,15 +97,14 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         &mut self,
         transcript: &mut Transcript<TranscriptFieldType, H>,
         proving_key: &mut ProvingKey<P, ECCVMFlavour>,
-    ) {
+    ) -> HonkProofResult<()> {
         let non_shifted = proving_key.polynomials.witness.non_shifted_mut();
         let first_labels = ECCVMFlavour::non_shifted_labels();
         let second_labels = ECCVMFlavour::to_be_shifted_without_accumulators_labels();
         let third_labels = ECCVMFlavour::to_be_shifted_accumulators_labels();
 
         for (wire, label) in non_shifted.iter_mut().zip(first_labels.iter()) {
-            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)
-                .expect("Failed to commit to non-shifted wire");
+            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)?;
         }
         let to_be_shifted_without_accumulators = proving_key
             .polynomials
@@ -112,8 +114,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             .iter_mut()
             .zip(second_labels.iter())
         {
-            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)
-                .expect("Failed to commit to shifted wire");
+            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)?;
         }
         let to_be_shifted_accumulators = proving_key
             .polynomials
@@ -123,9 +124,9 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             .iter_mut()
             .zip(third_labels.iter())
         {
-            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)
-                .expect("Failed to commit to shifted accumulator wire");
+            self.commit_to_witness_polynomial(wire, label, &proving_key.crs, transcript)?;
         }
+        Ok(())
     }
 
     fn compute_read_term(
@@ -191,36 +192,8 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             3 => read_term4, // degree 1
             _ => panic!("Invalid read index: {read_index}"),
         }
-        // let gamma = &self.decider.memory.relation_parameters.gamma;
-        // let eta_1 = &self.decider.memory.relation_parameters.eta_1;
-        // let eta_2 = &self.decider.memory.relation_parameters.eta_2;
-        // let eta_3 = &self.decider.memory.relation_parameters.eta_3;
-        // let w_1 = &proving_key.polynomials.witness.w_l()[i];
-        // let w_2 = &proving_key.polynomials.witness.w_r()[i];
-        // let w_3 = &proving_key.polynomials.witness.w_o()[i];
-        // let w_1_shift = &proving_key.polynomials.witness.w_l().shifted()[i];
-        // let w_2_shift = &proving_key.polynomials.witness.w_r().shifted()[i];
-        // let w_3_shift = &proving_key.polynomials.witness.w_o().shifted()[i];
-        // let table_index = &proving_key.polynomials.precomputed.q_o()[i];
-        // let negative_column_1_step_size = &proving_key.polynomials.precomputed.q_r()[i];
-        // let negative_column_2_step_size = &proving_key.polynomials.precomputed.q_m()[i];
-        // let negative_column_3_step_size = &proving_key.polynomials.precomputed.q_c()[i];
-        // // The wire values for lookup gates are accumulators structured in such a way that the differences w_i -
-        // // step_size*w_i_shift result in values present in column i of a corresponding table. See the documentation in
-        // // method get_lookup_accumulators() in  for a detailed explanation.
-        // let derived_table_entry_1 = *w_1 + gamma + *negative_column_1_step_size * w_1_shift;
-        // let derived_table_entry_2 = *w_2 + *negative_column_2_step_size * w_2_shift;
-        // let derived_table_entry_3 = *w_3 + *negative_column_3_step_size * w_3_shift;
-
-        // // (w_1 + \gamma q_2*w_1_shift) + η(w_2 + q_m*w_2_shift) + η₂(w_3 + q_c*w_3_shift) + η₃q_index.
-        // // deg 2 or 3
-        // derived_table_entry_1
-        //     + derived_table_entry_2 * eta_1
-        //     + derived_table_entry_3 * eta_2
-        //     + *table_index * eta_3
     }
 
-    /// Compute table_1 + gamma + table_2 * eta + table_3 * eta_2 + table_4 * eta_3
     fn compute_write_term(
         &self,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
@@ -350,7 +323,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         &mut self,
         transcript: &mut Transcript<TranscriptFieldType, H>,
         proving_key: &mut ProvingKey<P, ECCVMFlavour>,
-    ) {
+    ) -> HonkProofResult<()> {
         // // Compute and add beta to relation parameters
         let challs = transcript.get_challenges::<P>(&["BETA".to_string(), "GAMMA".to_string()]);
         let beta = challs[0];
@@ -388,9 +361,9 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             "LOOKUP_INVERSES",
             &proving_key.crs,
             transcript,
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        )?;
         std::mem::swap(&mut self.memory.lookup_inverses, &mut lookup_inverses_tmp);
+        Ok(())
     }
 
     fn compute_grand_product_numerator(
@@ -507,7 +480,9 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         let table_y = &proving_key.polynomials.witness.precompute_ty()[i];
 
         let precompute_skew = &proving_key.polynomials.witness.precompute_skew()[i];
-        let negative_inverse_seven = P::ScalarField::from(-7).inverse().unwrap();
+        let negative_inverse_seven = P::ScalarField::from(-7)
+            .inverse()
+            .expect("-7 is hopefully non-zero");
         let adjusted_skew = *precompute_skew * negative_inverse_seven;
 
         let wnaf_scalar_sum = &proving_key.polynomials.witness.precompute_scalar_sum()[i];
@@ -610,7 +585,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
     ) -> P::ScalarField {
         tracing::trace!("compute grand product denominator");
 
-        // TODO(@zac-williamson). The degree of this contribution is 17! makes overall relation degree 19.
+        // AZTEC TODO(@zac-williamson). The degree of this contribution is 17! makes overall relation degree 19.
         // Can optimise by refining the algebra, once we have a stable base to iterate off of.
         let gamma = &self.decider.memory.relation_parameters.gamma;
         let beta = &self.decider.memory.relation_parameters.beta;
@@ -825,25 +800,26 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         &mut self,
         transcript: &mut Transcript<TranscriptFieldType, H>,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
-    ) {
+    ) -> HonkProofResult<()> {
         // // Compute permutation grand product and their commitments
         self.compute_grand_product(proving_key);
         // we do std::mem::take here to avoid borrowing issues with self
         let mut z_perm_tmp = std::mem::take(&mut self.memory.z_perm);
-        self.commit_to_witness_polynomial(&mut z_perm_tmp, "Z_PERM", &proving_key.crs, transcript)
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        self.commit_to_witness_polynomial(&mut z_perm_tmp, "Z_PERM", &proving_key.crs, transcript)?;
         std::mem::swap(&mut self.memory.z_perm, &mut z_perm_tmp);
+        Ok(())
     }
 
+    #[expect(clippy::type_complexity)]
     fn execute_relation_check_rounds(
         &mut self,
         transcript: &mut Transcript<TranscriptFieldType, H>,
         crs: &ProverCrs<P>,
         circuit_size: u32,
-    ) -> (
+    ) -> HonkProofResult<(
         SumcheckOutput<<P as Pairing>::ScalarField, ECCVMFlavour>,
         ZKSumcheckData<P>,
-    ) {
+    )> {
         // using Sumcheck = SumcheckProver<Flavor, CONST_ECCVM_LOG_N>;
 
         // Sumcheck sumcheck(key->circuit_size, transcript);
@@ -862,14 +838,13 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             transcript,
             commitment_key,
             &mut self.decider.rng,
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        )?;
 
-        (
+        Ok((
             self.decider
                 .sumcheck_prove_zk(transcript, circuit_size, &mut zk_sumcheck_data),
             zk_sumcheck_data,
-        )
+        ))
     }
 
     fn execute_pcs_rounds(
@@ -879,7 +854,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         transcript: &mut Transcript<TranscriptFieldType, H>,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
         circuit_size: u32,
-    ) -> Transcript<TranscriptFieldType, H> {
+    ) -> HonkProofResult<(Transcript<TranscriptFieldType, H>)> {
         let mut small_subgroup_ipa_prover = SmallSubgroupIPAProver::<_>::new::<H>(
             zk_sumcheck_data,
             sumcheck_output
@@ -887,23 +862,17 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
                 .expect("We have ZK"),
             "Translation:".to_string(),
             &sumcheck_output.challenges,
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
-        small_subgroup_ipa_prover
-            .prove(transcript, &proving_key.crs, &mut self.decider.rng)
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP)
+        )?;
+        small_subgroup_ipa_prover.prove(transcript, &proving_key.crs, &mut self.decider.rng)?;
 
         let witness_polynomials = small_subgroup_ipa_prover.into_witness_polynomials();
-        let multivariate_to_univariate_opening_claim = self
-            .decider
-            .shplemini_prove(
-                transcript,
-                circuit_size,
-                &proving_key.crs,
-                sumcheck_output,
-                Some(witness_polynomials),
-            )
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        let multivariate_to_univariate_opening_claim = self.decider.shplemini_prove(
+            transcript,
+            circuit_size,
+            &proving_key.crs,
+            sumcheck_output,
+            Some(witness_polynomials),
+        )?;
 
         self.compute_translation_opening_claims(proving_key, transcript);
 
@@ -911,29 +880,26 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             multivariate_to_univariate_opening_claim;
 
         // Reduce the opening claims to a single opening claim via Shplonk
-        let batch_opening_claim = self
-            .decider
-            .shplonk_prove(
-                self.memory.opening_claims.to_vec(),
-                &proving_key.crs,
-                transcript,
-                None,
-                0,
-            )
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        let batch_opening_claim = self.decider.shplonk_prove(
+            self.memory.opening_claims.to_vec(),
+            &proving_key.crs,
+            transcript,
+            None,
+            0,
+        )?;
 
         // Compute the opening proof for the batched opening claim with the univariate PCS
 
         let mut ipa_transcript = Transcript::<TranscriptFieldType, H>::new();
-        compute_ipa_opening_proof(&mut ipa_transcript, batch_opening_claim, &proving_key.crs); //TODO FLORIN REMOVE UNWRAP
-        ipa_transcript
+        compute_ipa_opening_proof(&mut ipa_transcript, batch_opening_claim, &proving_key.crs)?;
+        Ok(ipa_transcript)
     }
 
     fn compute_translation_opening_claims(
         &mut self,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
         transcript: &mut Transcript<TranscriptFieldType, H>,
-    ) {
+    ) -> HonkProofResult<()> {
         //TODO FLORIN RETURN VALUE
         tracing::trace!("compute translation opening claims");
 
@@ -974,18 +940,18 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         let batching_challenge_v =
             transcript.get_challenge::<P>("Translation:batching_challenge_v".to_string());
 
-        let mut translation_masking_term_prover = translation_data
-            .compute_small_ipa_prover::<_>(
-                evaluation_challenge_x,
-                batching_challenge_v,
-                transcript,
-                &proving_key.crs,
-            )
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        let mut translation_masking_term_prover = translation_data.compute_small_ipa_prover::<_>(
+            evaluation_challenge_x,
+            batching_challenge_v,
+            transcript,
+            &proving_key.crs,
+        )?;
 
-        translation_masking_term_prover
-            .prove(transcript, &proving_key.crs, &mut self.decider.rng)
-            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        translation_masking_term_prover.prove(
+            transcript,
+            &proving_key.crs,
+            &mut self.decider.rng,
+        )?;
 
         // Get the challenge to check evaluations of the SmallSubgroupIPA witness polynomials
         let small_ipa_evaluation_challenge =
@@ -1001,7 +967,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             small_ipa_evaluation_challenge,
         ];
 
-        //TODO FLORIN PREFIY LABEL:
+        //TODO FLORIN PREFIX LABEL:
         let evaluation_labels = [
             "Translation:concatenation_eval".to_string(),
             "Translation:grand_sum_shift_eval".to_string(),
@@ -1054,5 +1020,6 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             },
             gemini_fold: false, //TODO FLORIN CHECK
         };
+        Ok(())
     }
 }
