@@ -7,10 +7,11 @@ use co_builder::polynomials::polynomial_flavours::PrecomputedEntitiesFlavour;
 use co_builder::polynomials::polynomial_flavours::ProverWitnessEntitiesFlavour;
 use co_builder::{
     HonkProofResult, TranscriptFieldType,
-    prelude::{HonkCurve, NUM_DISABLED_ROWS_IN_SUMCHECK, Polynomial, ProverCrs},
+    prelude::{HonkCurve, Polynomial, ProverCrs},
 };
 use itertools::izip;
-use ultrahonk::plain_prover_flavour::PlainProverFlavour;
+use ultrahonk::prelude::OpeningPair;
+use ultrahonk::prelude::ShpleminiOpeningClaim;
 use ultrahonk::{
     Utils as UltraHonkUtils,
     prelude::{
@@ -20,10 +21,12 @@ use ultrahonk::{
 };
 
 use crate::Utils;
+use crate::eccvm::types::TranslationData;
 
 //TODO FLORIN MOVE THIS SOMEWHERE ELSE LATER
 const CONST_ECCVM_LOG_N: usize = 16;
 const NUM_RELATIONS: usize = 7;
+const NUM_SMALL_IPA_EVALUATIONS: usize = 4;
 
 pub(crate) struct ProverMemory<P: Pairing> {
     /// column 3
@@ -853,17 +856,20 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         crs: &ProverCrs<P>,
         circuit_size: u32,
     ) {
-        let small_subgroup_ipa_prover = SmallSubgroupIPAProver::<_>::new::<H, _>(
-            zk_sumcheck_data,
-            &sumcheck_output.challenges,
-            sumcheck_output
-                .claimed_libra_evaluation
-                .expect("We have ZK"),
-            transcript,
-            crs,
-            &mut self.decider.rng,
-        )
-        .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        let mut small_subgroup_ipa_prover =
+            SmallSubgroupIPAProver::<_>::new::<H>(zk_sumcheck_data).unwrap(); //TODO FLORIN REMOVE UNWRAP
+        small_subgroup_ipa_prover
+            .prove(
+                &sumcheck_output.challenges,
+                sumcheck_output
+                    .claimed_libra_evaluation
+                    .expect("We have ZK"),
+                transcript,
+                crs,
+                &mut self.decider.rng,
+            )
+            .unwrap(); //TODO FLORIN REMOVE UNWRAP)
+
         let witness_polynomials = small_subgroup_ipa_prover.into_witness_polynomials();
         let prover_opening_claim = self
             .decider
@@ -876,35 +882,6 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             )
             .unwrap(); //TODO FLORIN REMOVE UNWRAP
 
-        // using Curve = typename Flavor::Curve;
-        // using Shplemini = ShpleminiProver_<Curve>;
-        // using Shplonk = ShplonkProver_<Curve>;
-        // using OpeningClaim = ProverOpeningClaim<Curve>;
-        // using PolynomialBatcher = GeminiProver_<Curve>::PolynomialBatcher;
-
-        // SmallSubgroupIPA small_subgroup_ipa_prover(zk_sumcheck_data,
-        //                                            sumcheck_output.challenge,
-        //                                            sumcheck_output.claimed_libra_evaluation,
-        //                                            transcript,
-        //                                            key->commitment_key);
-        // small_subgroup_ipa_prover.prove();
-
-        // // Execute the Shplemini (Gemini + Shplonk) protocol to produce a univariate opening claim for the multilinear
-        // // evaluations produced by Sumcheck
-        // PolynomialBatcher polynomial_batcher(key->circuit_size);
-        // polynomial_batcher.set_unshifted(key->polynomials.get_unshifted());
-        // polynomial_batcher.set_to_be_shifted_by_one(key->polynomials.get_to_be_shifted());
-
-        // OpeningClaim multivariate_to_univariate_opening_claim =
-        //     Shplemini::prove(key->circuit_size,
-        //                      polynomial_batcher,
-        //                      sumcheck_output.challenge,
-        //                      key->commitment_key,
-        //                      transcript,
-        //                      small_subgroup_ipa_prover.get_witness_polynomials(),
-        //                      sumcheck_output.round_univariates,
-        //                      sumcheck_output.round_univariate_evaluations);
-
         // ECCVMProver::compute_translation_opening_claims();
 
         // opening_claims.back() = std::move(multivariate_to_univariate_opening_claim);
@@ -914,5 +891,129 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
 
         // // Compute the opening proof for the batched opening claim with the univariate PCS
         // PCS::compute_opening_proof(key->commitment_key, batch_opening_claim, ipa_transcript);
+    }
+
+    fn compute_translation_opening_claims(
+        &mut self,
+        proving_key: &ProvingKey<P, ECCVMFlavour>,
+        transcript: &mut Transcript<TranscriptFieldType, H>,
+    ) {
+        //TODO FLORIN RETURN VALUE
+        tracing::trace!("compute translation opening claims");
+
+        // Initialize SmallSubgroupIPA structures
+        let mut evaluation_labels = Vec::with_capacity(NUM_SMALL_IPA_EVALUATIONS);
+        let mut evaluation_points = Vec::with_capacity(NUM_SMALL_IPA_EVALUATIONS);
+
+        // Collect the polynomials to be batched
+        let translation_polynomials = [
+            proving_key.polynomials.witness.transcript_op(),
+            proving_key.polynomials.witness.transcript_px(),
+            proving_key.polynomials.witness.transcript_py(),
+            proving_key.polynomials.witness.transcript_z1(),
+            proving_key.polynomials.witness.transcript_z2(),
+        ];
+        let translation_labels = [
+            "Translation:transcript_op".to_string(),
+            "Translation:transcript_px".to_string(),
+            "Translation:transcript_py".to_string(),
+            "Translation:transcript_z1".to_string(),
+            "Translation:transcript_z2".to_string(),
+        ];
+
+        // Extract the masking terms of `translation_polynomials`, concatenate them in the Lagrange basis over SmallSubgroup
+        // H, mask the resulting polynomial, and commit to it
+        let translation_data =
+            TranslationData::new(&translation_polynomials, transcript, &proving_key.crs);
+
+        // Get a challenge to evaluate the `translation_polynomials` as univariates
+        let evaluation_challenge_x: P::ScalarField =
+            transcript.get_challenge::<_>("Translation:evaluation_challenge_x".to_string());
+
+        // Evaluate `translation_polynomial` as univariates and add their evaluations at x to the transcript
+        let mut translation_evaluations = Vec::with_capacity(translation_polynomials.len());
+        for (poly, label) in translation_polynomials.iter().zip(translation_labels) {
+            let eval = poly.eval_poly(evaluation_challenge_x);
+            transcript.send_fr_to_verifier(label, eval);
+            translation_evaluations.push(eval);
+        }
+
+        // Get another challenge to batch the evaluations of the transcript polynomials
+        let batching_challenge_v =
+            transcript.get_challenge::<_>("Translation:batching_challenge_v".to_string());
+
+        let mut translation_masking_term_prover = translation_data
+            .compute_small_ipa_prover(
+                evaluation_challenge_x,
+                batching_challenge_v,
+                transcript,
+                &proving_key.crs,
+            )
+            .unwrap(); //TODO FLORIN REMOVE UNWRAP
+        //TODO FLORIN IMPLEMENT THIS: (Need to modify the smallipaprover struct)
+        // translation_masking_term_prover.prove(
+        //     evaluation_challenge_x,
+        //     batching_challenge_v,
+        //     transcript,
+        //     &proving_key.crs,
+        //     &mut self.decider.rng,
+        // );
+
+        // Get the challenge to check evaluations of the SmallSubgroupIPA witness polynomials
+        let small_ipa_evaluation_challenge =
+            transcript.get_challenge::<_>("Translation:small_ipa_evaluation_challenge".to_string());
+
+        // Populate SmallSubgroupIPA opening claims:
+        // 1. Get the evaluation points and labels
+        evaluation_points =
+            translation_masking_term_prover.evaluation_points(&small_ipa_evaluation_challenge);
+        evaluation_labels = translation_masking_term_prover.evaluation_labels();
+
+        // 2. Compute the evaluations of witness polynomials at corresponding points, send them to the verifier, and create
+        // the opening claims
+        let mut opening_claims = Vec::with_capacity(NUM_SMALL_IPA_EVALUATIONS + 1);
+        for idx in 0..NUM_SMALL_IPA_EVALUATIONS {
+            let witness_poly = &translation_masking_term_prover.into_witness_polynomials()[idx];
+            let evaluation = witness_poly.eval_poly(evaluation_points[idx]);
+            transcript.send_to_verifier(evaluation_labels[idx].clone(), evaluation);
+            opening_claims.push(ShpleminiOpeningClaim {
+                polynomial: witness_poly.clone(),
+                opening_pair: OpeningPair {
+                    challenge: evaluation_points[idx],
+                    evaluation,
+                },
+                gemini_fold: false, //TODO FLORIN CHECK
+            });
+        }
+
+        // Compute the opening claim for the masked evaluations of `op`, `Px`, `Py`, `z1`, and `z2` at
+        // `evaluation_challenge_x` batched by the powers of `batching_challenge_v`.
+        let mut batched_translation_univariate = Polynomial::new(vec![
+            P::ScalarField::zero();
+            proving_key.circuit_size
+                as usize
+        ]);
+        let mut batched_translation_evaluation = P::ScalarField::zero();
+        let mut batching_scalar = P::ScalarField::one();
+        for (polynomial, eval) in translation_polynomials
+            .iter()
+            .zip(translation_evaluations.iter())
+        {
+            batched_translation_univariate.add_scaled(polynomial, &batching_scalar);
+            batched_translation_evaluation += *eval * batching_scalar;
+            batching_scalar *= batching_challenge_v;
+        }
+
+        // Add the batched claim to the array of SmallSubgroupIPA opening claims.
+        opening_claims.push(ShpleminiOpeningClaim {
+            polynomial: batched_translation_univariate,
+            opening_pair: OpeningPair {
+                challenge: evaluation_challenge_x,
+                evaluation: batched_translation_evaluation,
+            },
+            gemini_fold: false, //TODO FLORIN CHECK
+        });
+
+        // OpeningClaim::new(opening_claims)
     }
 }

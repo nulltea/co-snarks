@@ -429,6 +429,9 @@ impl<T: Default> ECCVMProverWitnessEntities<T> {
     pub fn transcript_px(&self) -> &T {
         todo!()
     }
+    pub fn transcript_op(&self) -> &T {
+        todo!()
+    }
     pub fn transcript_py(&self) -> &T {
         todo!()
     }

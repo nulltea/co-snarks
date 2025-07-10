@@ -13,12 +13,12 @@ pub(crate) struct ShpleminiVerifierOpeningClaim<P: Pairing> {
 }
 #[derive(Clone)]
 pub struct ShpleminiOpeningClaim<F: PrimeField> {
-    pub(crate) polynomial: Polynomial<F>,
-    pub(crate) opening_pair: OpeningPair<F>,
-    pub(crate) gemini_fold: bool,
+    pub polynomial: Polynomial<F>,
+    pub opening_pair: OpeningPair<F>,
+    pub gemini_fold: bool,
 }
 #[derive(Clone)]
-pub(crate) struct OpeningPair<F: PrimeField> {
-    pub(crate) challenge: F,
-    pub(crate) evaluation: F,
+pub struct OpeningPair<F: PrimeField> {
+    pub challenge: F,
+    pub evaluation: F,
 }

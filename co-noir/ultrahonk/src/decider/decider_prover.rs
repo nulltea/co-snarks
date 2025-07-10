@@ -115,8 +115,9 @@ impl<
                 self.shplemini_prove(transcript, circuit_size, crs, sumcheck_output, None)?;
             Self::compute_opening_proof(prover_opening_claim, transcript, crs)
         } else {
-            let small_subgroup_ipa_prover = SmallSubgroupIPAProver::<_>::new::<H, _>(
-                zk_sumcheck_data.expect("We have ZK"),
+            let mut small_subgroup_ipa_prover =
+                SmallSubgroupIPAProver::<_>::new::<H>(zk_sumcheck_data.expect("We have ZK"))?;
+            small_subgroup_ipa_prover.prove(
                 &sumcheck_output.challenges,
                 sumcheck_output
                     .claimed_libra_evaluation
