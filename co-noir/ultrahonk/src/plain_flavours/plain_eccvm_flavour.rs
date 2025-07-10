@@ -1,3 +1,4 @@
+#![expect(unused)]
 use crate::decider::types::ClaimedEvaluations;
 use crate::decider::types::{ProverUnivariates, RelationParameters};
 use crate::plain_prover_flavour::PlainProverFlavour;

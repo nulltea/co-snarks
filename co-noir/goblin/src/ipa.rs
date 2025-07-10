@@ -1,4 +1,4 @@
-use ark_ec::{CurveGroup, pairing::Pairing};
+use ark_ec::pairing::Pairing;
 use ark_ff::{Field, Zero};
 use co_builder::{
     TranscriptFieldType,

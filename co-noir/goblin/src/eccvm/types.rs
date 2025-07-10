@@ -1,6 +1,6 @@
+#![expect(unused)]
 use ark_ec::pairing::Pairing;
 use co_builder::HonkProofResult;
-use co_builder::prelude::HonkCurve;
 use co_builder::{
     TranscriptFieldType,
     prelude::{Polynomial, ProverCrs},
@@ -35,7 +35,7 @@ impl<P: Pairing> TranslationData<P> {
 
     pub fn compute_small_ipa_prover<
         H: TranscriptHasher<TranscriptFieldType>,
-        R: rand::Rng + rand::CryptoRng,
+        // R: rand::Rng + rand::CryptoRng,
     >(
         &mut self,
         evaluation_challenge_x: P::ScalarField,

@@ -115,17 +115,15 @@ impl<
                 self.shplemini_prove(transcript, circuit_size, crs, sumcheck_output, None)?;
             Self::compute_opening_proof(prover_opening_claim, transcript, crs)
         } else {
-            let mut small_subgroup_ipa_prover =
-                SmallSubgroupIPAProver::<_>::new::<H>(zk_sumcheck_data.expect("We have ZK"))?;
-            small_subgroup_ipa_prover.prove(
-                &sumcheck_output.challenges,
+            let mut small_subgroup_ipa_prover = SmallSubgroupIPAProver::<_>::new::<H>(
+                zk_sumcheck_data.expect("We have ZK"),
                 sumcheck_output
                     .claimed_libra_evaluation
                     .expect("We have ZK"),
-                transcript,
-                crs,
-                &mut self.rng,
+                "Libra:".to_string(),
+                &sumcheck_output.challenges,
             )?;
+            small_subgroup_ipa_prover.prove(transcript, crs, &mut self.rng)?;
             let witness_polynomials = small_subgroup_ipa_prover.into_witness_polynomials();
             let prover_opening_claim = self.shplemini_prove(
                 transcript,

@@ -1,6 +1,10 @@
+#![expect(unused)]
+use crate::eccvm::types::TranslationData;
+use crate::ipa::compute_ipa_opening_proof;
 use ark_ec::pairing::Pairing;
 use ark_ff::Field;
 use ark_ff::One;
+use ark_ff::PrimeField;
 use ark_ff::Zero;
 use co_builder::flavours::eccvm_flavour::ECCVMFlavour;
 use co_builder::polynomials::polynomial_flavours::PrecomputedEntitiesFlavour;
@@ -12,6 +16,7 @@ use co_builder::{
 use itertools::izip;
 use rand_chacha::ChaCha12Rng;
 use ultrahonk::NUM_SMALL_IPA_EVALUATIONS;
+use ultrahonk::prelude::HonkProof;
 use ultrahonk::prelude::OpeningPair;
 use ultrahonk::prelude::ShpleminiOpeningClaim;
 use ultrahonk::{
@@ -21,10 +26,6 @@ use ultrahonk::{
         ZKSumcheckData,
     },
 };
-
-use crate::Utils;
-use crate::eccvm::types::TranslationData;
-use crate::ipa::compute_ipa_opening_proof;
 
 //TODO FLORIN MOVE THIS SOMEWHERE ELSE LATER
 pub(crate) const CONST_ECCVM_LOG_N: usize = 16;
@@ -38,13 +39,13 @@ pub(crate) struct ProverMemory<P: Pairing> {
     pub(crate) opening_claims: [ShpleminiOpeningClaim<P::ScalarField>; NUM_OPENING_CLAIMS],
 }
 
-struct ECCVM<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>> {
+struct Eccvm<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>> {
     //TODO FLORIN: I dont think this is the nicest way to do this, think about it later
     decider: Decider<P, H, ECCVMFlavour>,
     memory: ProverMemory<P>, //This is somewhat equivalent to the Oink Memory (i.e stores the lookup_inverses and z_perm)
 }
 
-impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>> ECCVM<P, H> {
+impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>> Eccvm<P, H> {
     /// A uniform method to mask, commit, and send the corresponding commitment to the verifier.
     fn commit_to_witness_polynomial(
         &mut self,
@@ -65,25 +66,28 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
 
     fn construct_proof(
         &mut self,
-        transcript: &mut Transcript<TranscriptFieldType, H>,
+        mut transcript: Transcript<TranscriptFieldType, H>,
         proving_key: &mut ProvingKey<P, ECCVMFlavour>, //TODO FLORIN: This has to be Grumpkin, so we need the Grumpkin CRS as well
-    ) {
+    ) -> HonkProofResult<(
+        HonkProof<TranscriptFieldType>,
+        HonkProof<TranscriptFieldType>,
+    )> {
         let circuit_size = proving_key.circuit_size;
-        self.execute_wire_commitments_round(transcript, proving_key);
-        self.execute_log_derivative_commitments_round(transcript, proving_key);
-        self.execute_grand_product_computation_round(transcript, proving_key);
+        self.execute_wire_commitments_round(&mut transcript, proving_key);
+        self.execute_log_derivative_commitments_round(&mut transcript, proving_key);
+        self.execute_grand_product_computation_round(&mut transcript, proving_key);
         let (sumcheck_output, zk_sumcheck_data) =
-            self.execute_relation_check_rounds(transcript, &proving_key.crs, circuit_size);
+            self.execute_relation_check_rounds(&mut transcript, &proving_key.crs, circuit_size);
         //TODO FLORIN REMOVE UNWRAP
-        self.execute_pcs_rounds(
+        let ipa_transcript = self.execute_pcs_rounds(
             sumcheck_output,
             zk_sumcheck_data,
-            transcript,
+            &mut transcript,
             proving_key,
             circuit_size,
         );
 
-        // return export_proof();
+        Ok((transcript.get_proof(), ipa_transcript.get_proof()))
     }
 
     fn execute_wire_commitments_round(
@@ -491,6 +495,14 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         // 15[P] }. We need to validate that scalar-multiplier and [P] = (P.x, P.y) come from MUL opcodes in the transcript
         // columns.
 
+        fn convert_to_wnaf<F: PrimeField>(s0: &F, s1: &F) -> F {
+            let mut t = *s0 + s0;
+            t += t;
+            t += s1;
+
+            t + t - F::from(15u32)
+        }
+
         let table_x = &proving_key.polynomials.witness.precompute_tx()[i];
         let table_y = &proving_key.polynomials.witness.precompute_ty()[i];
 
@@ -499,19 +511,19 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         let adjusted_skew = *precompute_skew * negative_inverse_seven;
 
         let wnaf_scalar_sum = &proving_key.polynomials.witness.precompute_scalar_sum()[i];
-        let w0 = Utils::convert_to_wnaf::<P::ScalarField>(
+        let w0 = convert_to_wnaf::<P::ScalarField>(
             &proving_key.polynomials.witness.precompute_s1hi()[i],
             &proving_key.polynomials.witness.precompute_s1lo()[i],
         );
-        let w1 = Utils::convert_to_wnaf::<P::ScalarField>(
+        let w1 = convert_to_wnaf::<P::ScalarField>(
             &proving_key.polynomials.witness.precompute_s2hi()[i],
             &proving_key.polynomials.witness.precompute_s2lo()[i],
         );
-        let w2 = Utils::convert_to_wnaf::<P::ScalarField>(
+        let w2 = convert_to_wnaf::<P::ScalarField>(
             &proving_key.polynomials.witness.precompute_s3hi()[i],
             &proving_key.polynomials.witness.precompute_s3lo()[i],
         );
-        let w3 = Utils::convert_to_wnaf::<P::ScalarField>(
+        let w3 = convert_to_wnaf::<P::ScalarField>(
             &proving_key.polynomials.witness.precompute_s4hi()[i],
             &proving_key.polynomials.witness.precompute_s4lo()[i],
         );
@@ -867,19 +879,18 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         transcript: &mut Transcript<TranscriptFieldType, H>,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
         circuit_size: u32,
-    ) {
-        let mut small_subgroup_ipa_prover =
-            SmallSubgroupIPAProver::<_>::new::<H>(zk_sumcheck_data).unwrap(); //TODO FLORIN REMOVE UNWRAP
+    ) -> Transcript<TranscriptFieldType, H> {
+        let mut small_subgroup_ipa_prover = SmallSubgroupIPAProver::<_>::new::<H>(
+            zk_sumcheck_data,
+            sumcheck_output
+                .claimed_libra_evaluation
+                .expect("We have ZK"),
+            "Translation:".to_string(),
+            &sumcheck_output.challenges,
+        )
+        .unwrap(); //TODO FLORIN REMOVE UNWRAP
         small_subgroup_ipa_prover
-            .prove(
-                &sumcheck_output.challenges,
-                sumcheck_output
-                    .claimed_libra_evaluation
-                    .expect("We have ZK"),
-                transcript,
-                &proving_key.crs,
-                &mut self.decider.rng,
-            )
+            .prove(transcript, &proving_key.crs, &mut self.decider.rng)
             .unwrap(); //TODO FLORIN REMOVE UNWRAP)
 
         let witness_polynomials = small_subgroup_ipa_prover.into_witness_polynomials();
@@ -915,6 +926,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
 
         let mut ipa_transcript = Transcript::<TranscriptFieldType, H>::new();
         compute_ipa_opening_proof(&mut ipa_transcript, batch_opening_claim, &proving_key.crs); //TODO FLORIN REMOVE UNWRAP
+        ipa_transcript
     }
 
     fn compute_translation_opening_claims(
@@ -963,21 +975,17 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
             transcript.get_challenge::<P>("Translation:batching_challenge_v".to_string());
 
         let mut translation_masking_term_prover = translation_data
-            .compute_small_ipa_prover::<_, ChaCha12Rng>(
+            .compute_small_ipa_prover::<_>(
                 evaluation_challenge_x,
                 batching_challenge_v,
                 transcript,
                 &proving_key.crs,
             )
             .unwrap(); //TODO FLORIN REMOVE UNWRAP
-        //TODO FLORIN IMPLEMENT THIS: (Need to modify the smallipaprover struct)
-        // translation_masking_term_prover.prove(
-        //     evaluation_challenge_x,
-        //     batching_challenge_v,
-        //     transcript,
-        //     &proving_key.crs,
-        //     &mut self.decider.rng,
-        // );
+
+        translation_masking_term_prover
+            .prove(transcript, &proving_key.crs, &mut self.decider.rng)
+            .unwrap(); //TODO FLORIN REMOVE UNWRAP
 
         // Get the challenge to check evaluations of the SmallSubgroupIPA witness polynomials
         let small_ipa_evaluation_challenge =
@@ -988,10 +996,12 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         let subgroup_generator = P::get_subgroup_generator();
         let evaluation_points = [
             small_ipa_evaluation_challenge,
-            small_ipa_evaluation_challenge * small_ipa_evaluation_challenge,
+            small_ipa_evaluation_challenge * subgroup_generator,
             small_ipa_evaluation_challenge,
             small_ipa_evaluation_challenge,
         ];
+
+        //TODO FLORIN PREFIY LABEL:
         let evaluation_labels = [
             "Translation:concatenation_eval".to_string(),
             "Translation:grand_sum_shift_eval".to_string(),
