@@ -246,110 +246,110 @@ impl<F: PrimeField> Relation<F, ECCVMFlavour> for EccBoolsRelation {
             univariate_accumulator.r0.evaluations[i] += tmp.evaluations[i];
         }
 
-        let mut tmp = q_add.to_owned() + &minus_one;
+        tmp = q_add.to_owned() + &minus_one;
         tmp *= q_add;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r1.evaluations.len() {
             univariate_accumulator.r1.evaluations[i] += tmp.evaluations[i];
         }
 
-        let mut tmp = q_mul.to_owned() + &minus_one;
+        tmp = q_mul.to_owned() + &minus_one;
         tmp *= q_mul;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r2.evaluations.len() {
             univariate_accumulator.r2.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = q_reset_accumulator.to_owned() + &minus_one;
+        tmp = q_reset_accumulator.to_owned() + &minus_one;
         tmp *= q_reset_accumulator;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r3.evaluations.len() {
             univariate_accumulator.r3.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = transcript_msm_transition.to_owned() + &minus_one;
+        tmp = transcript_msm_transition.to_owned() + &minus_one;
         tmp *= transcript_msm_transition;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r4.evaluations.len() {
             univariate_accumulator.r4.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = is_accumulator_empty.to_owned() + &minus_one;
+        tmp = is_accumulator_empty.to_owned() + &minus_one;
         tmp *= is_accumulator_empty;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r5.evaluations.len() {
             univariate_accumulator.r5.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = z1_zero.to_owned() + &minus_one;
+        tmp = z1_zero.to_owned() + &minus_one;
         tmp *= z1_zero;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r6.evaluations.len() {
             univariate_accumulator.r6.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = z2_zero.to_owned() + &minus_one;
+        tmp = z2_zero.to_owned() + &minus_one;
         tmp *= z2_zero;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r7.evaluations.len() {
             univariate_accumulator.r7.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = transcript_add_x_equal.to_owned() + &minus_one;
+        tmp = transcript_add_x_equal.to_owned() + &minus_one;
         tmp *= transcript_add_x_equal;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r8.evaluations.len() {
             univariate_accumulator.r8.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = transcript_add_y_equal.to_owned() + &minus_one;
+        tmp = transcript_add_y_equal.to_owned() + &minus_one;
         tmp *= transcript_add_y_equal;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r9.evaluations.len() {
             univariate_accumulator.r9.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = transcript_pinfinity.to_owned() + &minus_one;
+        tmp = transcript_pinfinity.to_owned() + &minus_one;
         tmp *= transcript_pinfinity;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r10.evaluations.len() {
             univariate_accumulator.r10.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = transcript_msm_infinity.to_owned() + &minus_one;
+        tmp = transcript_msm_infinity.to_owned() + &minus_one;
         tmp *= transcript_msm_infinity;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r11.evaluations.len() {
             univariate_accumulator.r11.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = msm_count_zero_at_transition.to_owned() + &minus_one;
+        tmp = msm_count_zero_at_transition.to_owned() + &minus_one;
         tmp *= msm_count_zero_at_transition;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r12.evaluations.len() {
             univariate_accumulator.r12.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = msm_transition.to_owned() + &minus_one;
+        tmp = msm_transition.to_owned() + &minus_one;
         tmp *= msm_transition;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r13.evaluations.len() {
             univariate_accumulator.r13.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = precompute_point_transition.to_owned() + &minus_one;
+        tmp = precompute_point_transition.to_owned() + &minus_one;
         tmp *= precompute_point_transition;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r14.evaluations.len() {
             univariate_accumulator.r14.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = msm_add.to_owned() + &minus_one;
+        tmp = msm_add.to_owned() + &minus_one;
         tmp *= msm_add;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r15.evaluations.len() {
             univariate_accumulator.r15.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = msm_double.to_owned() + &minus_one;
+        tmp = msm_double.to_owned() + &minus_one;
         tmp *= msm_double;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r16.evaluations.len() {
             univariate_accumulator.r16.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = msm_skew.to_owned() + &minus_one;
+        tmp = msm_skew.to_owned() + &minus_one;
         tmp *= msm_skew;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r17.evaluations.len() {
             univariate_accumulator.r17.evaluations[i] += tmp.evaluations[i];
         }
-        let mut tmp = precompute_select.to_owned() + &minus_one;
+        tmp = precompute_select.to_owned() + &minus_one;
         tmp *= precompute_select;
         tmp *= scaling_factor;
         for i in 0..univariate_accumulator.r18.evaluations.len() {

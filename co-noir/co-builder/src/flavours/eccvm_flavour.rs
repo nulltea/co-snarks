@@ -1050,4 +1050,91 @@ impl<T: Default> ECCVMWitnessEntities<T> {
     pub fn msm_count_shift(&self) -> &T {
         todo!()
     }
+    pub fn lookup_read_counts_0(&self) -> &T {
+        todo!()
+    }
+    pub fn lookup_read_counts_1(&self) -> &T {
+        todo!()
+    }
+}
+
+impl<T: Default> ECCVMShiftedWitnessEntities<T> {
+    pub fn z_perm_shift(&self) -> &T {
+        todo!()
+    }
+    pub fn transcript_mul_shift(&self) -> &T {
+        todo!()
+    } // column 0
+    pub fn transcript_msm_count_shift(&self) -> &T {
+        todo!()
+    } // column 1
+    pub fn precompute_scalar_sum_shift(&self) -> &T {
+        todo!()
+    } // column 2
+    pub fn precompute_s1hi_shift(&self) -> &T {
+        todo!()
+    } // column 3
+    pub fn precompute_dx_shift(&self) -> &T {
+        todo!()
+    } // column 4
+    pub fn precompute_dy_shift(&self) -> &T {
+        todo!()
+    } // column 5
+    pub fn precompute_tx_shift(&self) -> &T {
+        todo!()
+    } // column 6
+    pub fn precompute_ty_shift(&self) -> &T {
+        todo!()
+    } // column 7
+    pub fn msm_transition_shift(&self) -> &T {
+        todo!()
+    } // column 8
+    pub fn msm_add_shift(&self) -> &T {
+        todo!()
+    } // column 9
+    pub fn msm_double_shift(&self) -> &T {
+        todo!()
+    } // column 10
+    pub fn msm_skew_shift(&self) -> &T {
+        todo!()
+    } // column 11
+    pub fn msm_accumulator_x_shift(&self) -> &T {
+        todo!()
+    } // column 12
+    pub fn msm_accumulator_y_shift(&self) -> &T {
+        todo!()
+    } // column 13
+    pub fn msm_count_shift(&self) -> &T {
+        todo!()
+    } // column 14
+    pub fn msm_round_shift(&self) -> &T {
+        todo!()
+    } // column 15
+    pub fn msm_add1_shift(&self) -> &T {
+        todo!()
+    } // column 16
+    pub fn msm_pc_shift(&self) -> &T {
+        todo!()
+    } // column 17
+    pub fn precompute_pc_shift(&self) -> &T {
+        todo!()
+    } // column 18
+    pub fn transcript_pc_shift(&self) -> &T {
+        todo!()
+    } // column 19
+    pub fn precompute_round_shift(&self) -> &T {
+        todo!()
+    } // column 20
+    pub fn precompute_select_shift(&self) -> &T {
+        todo!()
+    } // column 21
+    pub fn transcript_accumulator_empty_shift(&self) -> &T {
+        todo!()
+    } // column 22
+    pub fn transcript_accumulator_x_shift(&self) -> &T {
+        todo!()
+    } // column 23
+    pub fn transcript_accumulator_y_shift(&self) -> &T {
+        todo!()
+    }
 }

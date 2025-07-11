@@ -2,6 +2,7 @@
 use crate::eccvm::types::TranslationData;
 use crate::ipa::compute_ipa_opening_proof;
 use ark_ec::pairing::Pairing;
+use ark_ff::FftField;
 use ark_ff::Field;
 use ark_ff::One;
 use ark_ff::PrimeField;
@@ -578,7 +579,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
         numerator
     }
 
-    fn grand_product_denominator(
+    fn compute_grand_product_denominator(
         &self,
         proving_key: &ProvingKey<P, ECCVMFlavour>,
         i: usize,
@@ -661,7 +662,8 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
 
         let lookup_first = -(*z1_zero) + P::ScalarField::one();
         let lookup_second = -(*z2_zero) + P::ScalarField::one();
-        let endomorphism_base_field_shift = P::ScalarField::one(); // TODO FLORIN: P::ScalarField::cube_root_of_unity();
+        let endomorphism_base_field_shift = P::ScalarField::get_root_of_unity(3)
+            .expect("3rd root of unity should exist in the field");
 
         let mut transcript_input1 =
             *transcript_pc + *transcript_px * *beta + *transcript_py * *beta_sqr + *z1 * *beta_cube; // degree = 1
@@ -748,7 +750,7 @@ impl<P: HonkCurve<TranscriptFieldType>, H: TranscriptHasher<TranscriptFieldType>
                 i
             };
             numerator.push(self.compute_grand_product_numerator(proving_key, idx));
-            denominator.push(self.grand_product_denominator(proving_key, idx));
+            denominator.push(self.compute_grand_product_denominator(proving_key, idx));
         }
 
         // Step (2)

@@ -1,55 +1,171 @@
 use crate::{decider::relations::Relation, prelude::Univariate};
 use ark_ff::PrimeField;
-use co_builder::flavours::eccvm_flavour::ECCVMFlavour;
+use co_builder::{
+    flavours::eccvm_flavour::ECCVMFlavour, polynomials::polynomial_flavours::WitnessEntitiesFlavour,
+};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct EccLookupRelationAcc<F: PrimeField> {
-    pub(crate) r0: Univariate<F, 3>,
-    pub(crate) r1: Univariate<F, 3>,
-    pub(crate) r2: Univariate<F, 3>,
-    pub(crate) r3: Univariate<F, 3>,
-    pub(crate) r4: Univariate<F, 3>,
-    pub(crate) r5: Univariate<F, 3>,
-    pub(crate) r6: Univariate<F, 3>,
-    pub(crate) r7: Univariate<F, 3>,
-    pub(crate) r8: Univariate<F, 3>,
-    pub(crate) r9: Univariate<F, 3>,
-    pub(crate) r10: Univariate<F, 3>,
-    pub(crate) r11: Univariate<F, 3>,
-    pub(crate) r12: Univariate<F, 3>,
-    pub(crate) r13: Univariate<F, 3>,
-    pub(crate) r14: Univariate<F, 3>,
-    pub(crate) r15: Univariate<F, 3>,
-    pub(crate) r16: Univariate<F, 3>,
-    pub(crate) r17: Univariate<F, 3>,
-    pub(crate) r18: Univariate<F, 3>,
+    pub(crate) r0: Univariate<F, 9>,
+    pub(crate) r1: Univariate<F, 9>,
 }
 #[derive(Clone, Debug, Default)]
 pub(crate) struct EccLookupRelationEvals<F: PrimeField> {
     pub(crate) r0: F,
     pub(crate) r1: F,
-    pub(crate) r2: F,
-    pub(crate) r3: F,
-    pub(crate) r4: F,
-    pub(crate) r5: F,
-    pub(crate) r6: F,
-    pub(crate) r7: F,
-    pub(crate) r8: F,
-    pub(crate) r9: F,
-    pub(crate) r10: F,
-    pub(crate) r11: F,
-    pub(crate) r12: F,
-    pub(crate) r13: F,
-    pub(crate) r14: F,
-    pub(crate) r15: F,
-    pub(crate) r16: F,
-    pub(crate) r17: F,
-    pub(crate) r18: F,
 }
 
 pub(crate) struct EccLookupRelation {}
 impl EccLookupRelation {
     pub(crate) const NUM_RELATIONS: usize = 19;
+    pub(crate) const READ_TERMS: usize = 4;
+    pub(crate) const WRITE_TERMS: usize = 2;
+
+    pub(crate) fn compute_read_term<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+        relation_parameters: &crate::prelude::RelationParameters<F, ECCVMFlavour>,
+        read_index: usize,
+    ) -> Univariate<F, SIZE> {
+        assert!(
+            read_index < Self::READ_TERMS,
+            "READ_INDEX must be less than 4"
+        );
+
+        let gamma = relation_parameters.gamma;
+        let beta = relation_parameters.beta;
+        let beta_sqr = beta * beta;
+        let beta_cube = beta_sqr * beta;
+
+        let msm_pc = input.witness.msm_pc();
+        let msm_count = input.witness.msm_count();
+        let msm_slice1 = input.witness.msm_slice1();
+        let msm_slice2 = input.witness.msm_slice2();
+        let msm_slice3 = input.witness.msm_slice3();
+        let msm_slice4 = input.witness.msm_slice4();
+        let msm_x1 = input.witness.msm_x1();
+        let msm_x2 = input.witness.msm_x2();
+        let msm_x3 = input.witness.msm_x3();
+        let msm_x4 = input.witness.msm_x4();
+        let msm_y1 = input.witness.msm_y1();
+        let msm_y2 = input.witness.msm_y2();
+        let msm_y3 = input.witness.msm_y3();
+        let msm_y4 = input.witness.msm_y4();
+
+        let current_pc = msm_count.to_owned() * F::from(-1) + msm_pc;
+
+        let read_term1 = current_pc.clone()
+            + &gamma
+            + msm_slice1.to_owned() * beta
+            + msm_x1.to_owned() * beta_sqr
+            + msm_y1.to_owned() * beta_cube;
+
+        let read_term2 = (current_pc.clone() + &F::from(-1))
+            + &gamma
+            + msm_slice2.to_owned() * beta
+            + msm_x2.to_owned() * beta_sqr
+            + msm_y2.to_owned() * beta_cube;
+
+        let read_term3 = (current_pc.clone() + &F::from(-2))
+            + &gamma
+            + msm_slice3.to_owned() * beta
+            + msm_x3.to_owned() * beta_sqr
+            + msm_y3.to_owned() * beta_cube;
+
+        let read_term4 = (current_pc + &F::from(-3))
+            + &gamma
+            + msm_slice4.to_owned() * beta
+            + msm_x4.to_owned() * beta_sqr
+            + msm_y4.to_owned() * beta_cube;
+
+        match read_index {
+            0 => read_term1,
+            1 => read_term2,
+            2 => read_term3,
+            3 => read_term4,
+            _ => unreachable!(),
+        }
+    }
+    pub(crate) fn compute_write_term<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+        relation_parameters: &crate::prelude::RelationParameters<F, ECCVMFlavour>,
+        write_index: usize,
+    ) -> Univariate<F, SIZE> {
+        assert!(
+            write_index < Self::WRITE_TERMS,
+            "WRITE_INDEX must be less than 2"
+        );
+
+        let precompute_pc = input.witness.msm_pc();
+        let tx = input.witness.msm_x1(); // Assuming tx corresponds to msm_x1
+        let ty = input.witness.msm_y1(); // Assuming ty corresponds to msm_y1
+        let precompute_round = input.witness.msm_slice1(); // Assuming precompute_round corresponds to msm_slice1
+        let gamma = relation_parameters.gamma;
+        let beta = relation_parameters.beta;
+        let beta_sqr = beta * beta;
+        let beta_cube = beta_sqr * beta;
+
+        let negative_term = precompute_pc.to_owned()
+            + &gamma
+            + precompute_round.to_owned() * beta
+            + tx.to_owned() * beta_sqr
+            - ty.to_owned() * beta_cube;
+
+        let positive_slice_value = -precompute_round.to_owned() + &F::from(15);
+        let positive_term = positive_slice_value * beta
+            + tx.to_owned() * beta_sqr
+            + ty.to_owned() * beta_cube
+            + precompute_pc
+            + &gamma;
+
+        match write_index {
+            0 => positive_term, // degree 1
+            1 => negative_term, // degree 1
+            _ => unreachable!(),
+        }
+    }
+    pub(crate) fn compute_inverse_exists<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+    ) -> Univariate<F, SIZE> {
+        let row_has_write = input.witness.precompute_select();
+        let row_has_read = input.witness.msm_add().to_owned() + input.witness.msm_skew();
+        (row_has_write.to_owned() * F::from(-1) * row_has_read.clone())
+            + row_has_write
+            + row_has_read
+    }
+    pub(crate) fn lookup_read_counts<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+        index: usize,
+    ) -> &Univariate<F, SIZE> {
+        match index {
+            0 => input.witness.lookup_read_counts_0(),
+            1 => input.witness.lookup_read_counts_1(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub(crate) fn compute_read_term_predicate<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+        read_index: usize,
+    ) -> &Univariate<F, SIZE> {
+        match read_index {
+            0 => input.witness.msm_add1(),
+            1 => input.witness.msm_add2(),
+            2 => input.witness.msm_add3(),
+            3 => input.witness.msm_add4(),
+            _ => unreachable!(),
+        }
+    }
+
+    pub(crate) fn compute_write_term_predicate<F: PrimeField, const SIZE: usize>(
+        input: &crate::decider::types::ProverUnivariatesSized<F, ECCVMFlavour, SIZE>,
+        write_index: usize,
+    ) -> &Univariate<F, SIZE> {
+        match write_index {
+            0 => input.witness.precompute_select(),
+            1 => input.witness.precompute_select(), // TODO: Verify if this is correct
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl<F: PrimeField> EccLookupRelationAcc<F> {
@@ -57,23 +173,6 @@ impl<F: PrimeField> EccLookupRelationAcc<F> {
         assert!(elements.len() == EccLookupRelation::NUM_RELATIONS);
         self.r0 *= elements[0];
         self.r1 *= elements[1];
-        self.r2 *= elements[2];
-        self.r3 *= elements[3];
-        self.r4 *= elements[4];
-        self.r5 *= elements[5];
-        self.r6 *= elements[6];
-        self.r7 *= elements[7];
-        self.r8 *= elements[8];
-        self.r9 *= elements[9];
-        self.r10 *= elements[10];
-        self.r11 *= elements[11];
-        self.r12 *= elements[12];
-        self.r13 *= elements[13];
-        self.r14 *= elements[14];
-        self.r15 *= elements[15];
-        self.r16 *= elements[16];
-        self.r17 *= elements[17];
-        self.r18 *= elements[18];
     }
 
     pub(crate) fn extend_and_batch_univariates<const SIZE: usize>(
@@ -89,108 +188,6 @@ impl<F: PrimeField> EccLookupRelationAcc<F> {
             true,
         );
         self.r1.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r2.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r3.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r4.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r5.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r6.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r7.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r8.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r9.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r10.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r11.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r12.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r13.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r14.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r15.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r16.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r17.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-            true,
-        );
-        self.r18.extend_and_batch_univariates(
             result,
             extended_random_poly,
             partial_evaluation_result,
@@ -218,144 +215,79 @@ impl<F: PrimeField> Relation<F, ECCVMFlavour> for EccLookupRelation {
         relation_parameters: &crate::prelude::RelationParameters<F, ECCVMFlavour>,
         scaling_factor: &F,
     ) {
-        todo!()
-        // let z1_zero = input.witness.transcript_z1zero();
-        // let z2_zero = input.witness.transcript_z2zero();
-        // let msm_count_zero_at_transition = input.witness.transcript_msm_count_zero_at_transition();
-        // let q_add = input.witness.transcript_add();
-        // let q_mul = input.witness.transcript_mul();
-        // let q_eq = input.witness.transcript_eq();
-        // let transcript_msm_transition = input.witness.transcript_msm_transition();
-        // let is_accumulator_empty = input.witness.transcript_accumulator_empty();
-        // let q_reset_accumulator = input.witness.transcript_reset_accumulator();
-        // let transcript_pinfinity = input.witness.transcript_base_infinity();
-        // let transcript_msm_infinity = input.witness.transcript_msm_infinity();
-        // let transcript_add_x_equal = input.witness.transcript_add_x_equal();
-        // let transcript_add_y_equal = input.witness.transcript_add_y_equal();
-        // let precompute_point_transition = input.witness.precompute_point_transition();
-        // let msm_transition = input.witness.msm_transition();
-        // let msm_add = input.witness.msm_add();
-        // let msm_double = input.witness.msm_double();
-        // let msm_skew = input.witness.msm_skew();
-        // let precompute_select = input.witness.precompute_select();
-        // let minus_one = -F::one();
+        const NUM_TOTAL_TERMS: usize =
+            EccLookupRelation::READ_TERMS + EccLookupRelation::WRITE_TERMS;
+        let mut lookup_inverses = input.witness.lookup_inverses().clone(); // Degree 1
 
-        // let mut tmp = q_eq.to_owned() + &minus_one;
-        // tmp *= q_eq;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r0.evaluations.len() {
-        //     univariate_accumulator.r0.evaluations[i] += tmp.evaluations[i];
-        // }
+        let mut lookup_terms = Vec::with_capacity(NUM_TOTAL_TERMS);
 
-        // let mut tmp = q_add.to_owned() + &minus_one;
-        // tmp *= q_add;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r1.evaluations.len() {
-        //     univariate_accumulator.r1.evaluations[i] += tmp.evaluations[i];
-        // }
+        for (i, term) in lookup_terms.iter_mut().take(Self::READ_TERMS).enumerate() {
+            *term = Self::compute_read_term::<_, _>(input, relation_parameters, i);
+        }
 
-        // let mut tmp = q_mul.to_owned() + &minus_one;
-        // tmp *= q_mul;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r2.evaluations.len() {
-        //     univariate_accumulator.r2.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = q_reset_accumulator.to_owned() + &minus_one;
-        // tmp *= q_reset_accumulator;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r3.evaluations.len() {
-        //     univariate_accumulator.r3.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = transcript_msm_transition.to_owned() + &minus_one;
-        // tmp *= transcript_msm_transition;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r4.evaluations.len() {
-        //     univariate_accumulator.r4.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = is_accumulator_empty.to_owned() + &minus_one;
-        // tmp *= is_accumulator_empty;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r5.evaluations.len() {
-        //     univariate_accumulator.r5.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = z1_zero.to_owned() + &minus_one;
-        // tmp *= z1_zero;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r6.evaluations.len() {
-        //     univariate_accumulator.r6.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = z2_zero.to_owned() + &minus_one;
-        // tmp *= z2_zero;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r7.evaluations.len() {
-        //     univariate_accumulator.r7.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = transcript_add_x_equal.to_owned() + &minus_one;
-        // tmp *= transcript_add_x_equal;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r8.evaluations.len() {
-        //     univariate_accumulator.r8.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = transcript_add_y_equal.to_owned() + &minus_one;
-        // tmp *= transcript_add_y_equal;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r9.evaluations.len() {
-        //     univariate_accumulator.r9.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = transcript_pinfinity.to_owned() + &minus_one;
-        // tmp *= transcript_pinfinity;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r10.evaluations.len() {
-        //     univariate_accumulator.r10.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = transcript_msm_infinity.to_owned() + &minus_one;
-        // tmp *= transcript_msm_infinity;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r11.evaluations.len() {
-        //     univariate_accumulator.r11.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = msm_count_zero_at_transition.to_owned() + &minus_one;
-        // tmp *= msm_count_zero_at_transition;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r12.evaluations.len() {
-        //     univariate_accumulator.r12.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = msm_transition.to_owned() + &minus_one;
-        // tmp *= msm_transition;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r13.evaluations.len() {
-        //     univariate_accumulator.r13.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = precompute_point_transition.to_owned() + &minus_one;
-        // tmp *= precompute_point_transition;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r14.evaluations.len() {
-        //     univariate_accumulator.r14.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = msm_add.to_owned() + &minus_one;
-        // tmp *= msm_add;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r15.evaluations.len() {
-        //     univariate_accumulator.r15.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = msm_double.to_owned() + &minus_one;
-        // tmp *= msm_double;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r16.evaluations.len() {
-        //     univariate_accumulator.r16.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = msm_skew.to_owned() + &minus_one;
-        // tmp *= msm_skew;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r17.evaluations.len() {
-        //     univariate_accumulator.r17.evaluations[i] += tmp.evaluations[i];
-        // }
-        // let mut tmp = precompute_select.to_owned() + &minus_one;
-        // tmp *= precompute_select;
-        // tmp *= scaling_factor;
-        // for i in 0..univariate_accumulator.r18.evaluations.len() {
-        //     univariate_accumulator.r18.evaluations[i] += tmp.evaluations[i];
-        // }
+        for i in 0..Self::WRITE_TERMS {
+            lookup_terms[i + Self::READ_TERMS] =
+                Self::compute_write_term::<_, _>(input, relation_parameters, i);
+        }
+
+        let mut denominator_accumulator = lookup_terms.clone();
+
+        for i in 0..NUM_TOTAL_TERMS {
+            let tmp = denominator_accumulator[i].clone();
+            denominator_accumulator[i + 1] *= tmp;
+        }
+
+        let inverse_exists = Self::compute_inverse_exists(input); // Degree 2
+
+        // Note: the lookup_inverses are computed so that the value is 0 if !inverse_exists
+        let tmp = (denominator_accumulator[NUM_TOTAL_TERMS - 1].clone()
+            * input.witness.lookup_inverses().clone()
+            - inverse_exists.clone())
+            * scaling_factor;
+        for i in 0..univariate_accumulator.r0.evaluations.len() {
+            univariate_accumulator.r0.evaluations[i] += tmp.evaluations[i];
+        }
+
+        // After this algo, total degree of denominator_accumulator = NUM_TOTAL_TERMS
+        for i in 0..NUM_TOTAL_TERMS - 1 {
+            denominator_accumulator[NUM_TOTAL_TERMS - 1 - i] =
+                denominator_accumulator[NUM_TOTAL_TERMS - 2 - i].clone() * lookup_inverses.clone();
+
+            lookup_inverses =
+                lookup_inverses.clone() * lookup_terms[NUM_TOTAL_TERMS - 1 - i].clone();
+        }
+        denominator_accumulator[0] = lookup_inverses;
+
+        // Each predicate is degree-1
+        // Degree of relation at this point = NUM_TOTAL_TERMS + 1
+        let mut tmp = Univariate {
+            evaluations: [F::zero(); SIZE],
+        };
+        for (i, denuminator) in denominator_accumulator
+            .iter()
+            .enumerate()
+            .take(Self::READ_TERMS)
+        {
+            tmp += Self::compute_read_term_predicate::<_, _>(input, i).to_owned() * denuminator;
+        }
+        for i in 0..univariate_accumulator.r0.evaluations.len() {
+            univariate_accumulator.r0.evaluations[i] += tmp.evaluations[i];
+        }
+
+        // Each predicate is degree-1, `lookup_read_counts` is degree-1
+        // Degree of relation = NUM_TOTAL_TERMS + 2
+        tmp = Univariate {
+            evaluations: [F::zero(); SIZE],
+        };
+        for i in 0..Self::WRITE_TERMS {
+            let p = Self::compute_write_term_predicate::<_, _>(input, i);
+            let lookup_read_count = Self::lookup_read_counts::<_, _>(input, i);
+            tmp -= p.to_owned()
+                * (denominator_accumulator[i + Self::READ_TERMS].clone() * lookup_read_count);
+        }
+        for i in 0..univariate_accumulator.r1.evaluations.len() {
+            univariate_accumulator.r1.evaluations[i] += tmp.evaluations[i];
+        }
     }
 
     fn verify_accumulate(
