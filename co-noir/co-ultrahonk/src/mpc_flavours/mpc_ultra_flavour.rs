@@ -90,6 +90,55 @@ where
     pub(crate) poseidon_int: SumCheckDataForRelation<T, P, UltraFlavour>,
 }
 
+fn extend_and_batch_univariates_template<
+    T: NoirUltraHonkProver<P>,
+    P: Pairing,
+    const SIZE: usize,
+>(
+    acc: &AllRelationAccUltra<T, P>,
+    result: &mut SharedUnivariate<T, P, SIZE>,
+    extended_random_poly: &Univariate<P::ScalarField, SIZE>,
+    partial_evaluation_result: &P::ScalarField,
+) {
+    acc.r_arith.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_perm.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_lookup.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_delta.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_elliptic.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_aux
+        .extend_and_batch_univariates(result, extended_random_poly, partial_evaluation_result);
+    acc.r_pos_ext.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_pos_int.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+}
+
 impl MPCProverFlavour for UltraFlavour {
     type AllRelationAcc<T: NoirUltraHonkProver<P>, P: Pairing> = AllRelationAccUltra<T, P>;
 
@@ -160,42 +209,8 @@ impl MPCProverFlavour for UltraFlavour {
         extended_random_poly: &Self::SumcheckRoundOutputPublic<P::ScalarField>,
         partial_evaluation_result: &P::ScalarField,
     ) {
-        acc.r_arith.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_perm.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_lookup.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_delta.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_elliptic.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_aux.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_ext.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_int.extend_and_batch_univariates(
+        extend_and_batch_univariates_template(
+            acc,
             result,
             extended_random_poly,
             partial_evaluation_result,
@@ -208,42 +223,8 @@ impl MPCProverFlavour for UltraFlavour {
         extended_random_poly: &Self::SumcheckRoundOutputZKPublic<P::ScalarField>,
         partial_evaluation_result: &P::ScalarField,
     ) {
-        acc.r_arith.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_perm.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_lookup.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_delta.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_elliptic.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_aux.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_ext.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_int.extend_and_batch_univariates(
+        extend_and_batch_univariates_template(
+            acc,
             result,
             extended_random_poly,
             partial_evaluation_result,
