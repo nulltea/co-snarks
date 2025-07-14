@@ -5,7 +5,6 @@ use crate::{
     plain_prover_flavour::PlainProverFlavour,
     prelude::GateSeparatorPolynomial,
     transcript::{Transcript, TranscriptHasher},
-    // types::NUM_ALL_ENTITIES,
     verifier::HonkVerifyResult,
 };
 use ark_ff::{One, Zero};
