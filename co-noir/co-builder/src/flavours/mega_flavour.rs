@@ -9,13 +9,21 @@ use crate::{
     },
     prover_flavour::{Flavour, ProverFlavour},
 };
+
+type MegaPrecomputedEntities<T> =
+    PrecomputedEntities<T, { MegaFlavour::PRECOMPUTED_ENTITIES_SIZE }>;
+type MegaProverWitnessEntities<T> =
+    ProverWitnessEntities<T, { MegaFlavour::PROVER_WITNESS_ENTITIES_SIZE }>;
+type MegaShiftedWitnessEntities<T> =
+    ShiftedWitnessEntities<T, { MegaFlavour::SHIFTED_WITNESS_ENTITIES_SIZE }>;
+type MegaWitnessEntities<T> = WitnessEntities<T, { MegaFlavour::WITNESS_ENTITIES_SIZE }>;
+
 #[derive(Default)]
-pub struct MegaFlavour {
-    // phantom_data: PhantomData<F>,
-}
+pub struct MegaFlavour {}
+
 impl ProverFlavour for MegaFlavour {
     type ProverWitnessEntities<T: Default + std::marker::Sync> = MegaProverWitnessEntities<T>;
-    type ShiftedWitnessEntities<T: Default + std::marker::Sync> = MegaShiftedWitnessEntities<T>; //This is the same for Mega and Mega
+    type ShiftedWitnessEntities<T: Default + std::marker::Sync> = MegaShiftedWitnessEntities<T>; // This is the same for Ultra and Mega
     type WitnessEntities<T: Default + std::marker::Sync> = MegaWitnessEntities<T>;
     type PrecomputedEntities<T: Default + Clone + std::marker::Sync> = MegaPrecomputedEntities<T>;
 
@@ -177,13 +185,6 @@ impl ProverFlavour for MegaFlavour {
         }
     }
 }
-type MegaPrecomputedEntities<T> =
-    PrecomputedEntities<T, { MegaFlavour::PRECOMPUTED_ENTITIES_SIZE }>;
-type MegaProverWitnessEntities<T> =
-    ProverWitnessEntities<T, { MegaFlavour::PROVER_WITNESS_ENTITIES_SIZE }>;
-type MegaShiftedWitnessEntities<T> =
-    ShiftedWitnessEntities<T, { MegaFlavour::SHIFTED_WITNESS_ENTITIES_SIZE }>;
-type MegaWitnessEntities<T> = WitnessEntities<T, { MegaFlavour::WITNESS_ENTITIES_SIZE }>;
 
 impl<T: Default> PrecomputedEntitiesFlavour<T> for MegaPrecomputedEntities<T> {
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
@@ -427,6 +428,7 @@ impl<T: Default> PrecomputedEntitiesFlavour<T> for MegaPrecomputedEntities<T> {
         }
     }
 }
+
 impl<T: Default> ProverWitnessEntitiesFlavour<T> for MegaProverWitnessEntities<T> {
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where

@@ -11,12 +11,20 @@ use crate::{
     prover_flavour::{Flavour, ProverFlavour},
 };
 
+type UltraPrecomputedEntities<T> =
+    PrecomputedEntities<T, { UltraFlavour::PRECOMPUTED_ENTITIES_SIZE }>;
+type UltraProverWitnessEntities<T> =
+    ProverWitnessEntities<T, { UltraFlavour::PROVER_WITNESS_ENTITIES_SIZE }>;
+type UltraShiftedWitnessEntities<T> =
+    ShiftedWitnessEntities<T, { UltraFlavour::SHIFTED_WITNESS_ENTITIES_SIZE }>;
+type UltraWitnessEntities<T> = WitnessEntities<T, { UltraFlavour::WITNESS_ENTITIES_SIZE }>;
+
 #[derive(Default, Clone)]
 pub struct UltraFlavour {}
 
 impl ProverFlavour for UltraFlavour {
     type ProverWitnessEntities<T: Default + std::marker::Sync> = UltraProverWitnessEntities<T>;
-    type ShiftedWitnessEntities<T: Default + std::marker::Sync> = UltraShiftedWitnessEntities<T>; //This is the same for Ultra and Ultra
+    type ShiftedWitnessEntities<T: Default + std::marker::Sync> = UltraShiftedWitnessEntities<T>; // This is the same for Ultra and Mega
     type WitnessEntities<T: Default + std::marker::Sync> = UltraWitnessEntities<T>;
     type PrecomputedEntities<T: Default + Clone + std::marker::Sync> = UltraPrecomputedEntities<T>;
 
@@ -176,13 +184,7 @@ impl ProverFlavour for UltraFlavour {
         }
     }
 }
-type UltraPrecomputedEntities<T> =
-    PrecomputedEntities<T, { UltraFlavour::PRECOMPUTED_ENTITIES_SIZE }>;
-type UltraProverWitnessEntities<T> =
-    ProverWitnessEntities<T, { UltraFlavour::PROVER_WITNESS_ENTITIES_SIZE }>;
-type UltraShiftedWitnessEntities<T> =
-    ShiftedWitnessEntities<T, { UltraFlavour::SHIFTED_WITNESS_ENTITIES_SIZE }>;
-type UltraWitnessEntities<T> = WitnessEntities<T, { UltraFlavour::WITNESS_ENTITIES_SIZE }>;
+
 impl<T: Default> PrecomputedEntitiesFlavour<T> for UltraPrecomputedEntities<T> {
     fn new() -> Self {
         Self {
@@ -534,6 +536,7 @@ impl<T: Default> WitnessEntitiesFlavour<T> for UltraWitnessEntities<T> {
         &mut self.elements[UltraFlavour::WITNESS_LOOKUP_READ_TAGS]
     }
 }
+
 impl<T: Default> ShiftedWitnessEntitiesFlavour<T> for UltraShiftedWitnessEntities<T> {
     fn new() -> Self {
         Self {
