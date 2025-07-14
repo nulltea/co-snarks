@@ -43,16 +43,14 @@ impl<
     }
 
     pub fn get_f_evaluations(
-        evaluations: &'_ ClaimedEvaluations<P::ScalarField, L>,
-    ) -> PolyF<'_, P::ScalarField, L> {
+        evaluations: &ClaimedEvaluations<P::ScalarField, L>,
+    ) -> PolyF<P::ScalarField, L> {
         PolyF {
             precomputed: &evaluations.precomputed,
             witness: &evaluations.witness,
         }
     }
-    pub fn get_f_comms(
-        evaluations: &'_ ClaimedEvaluations<P::G1Affine, L>,
-    ) -> PolyF<'_, P::G1Affine, L> {
+    pub fn get_f_comms(evaluations: &ClaimedEvaluations<P::G1Affine, L>) -> PolyF<P::G1Affine, L> {
         PolyF {
             precomputed: &evaluations.precomputed,
             witness: &evaluations.witness,
