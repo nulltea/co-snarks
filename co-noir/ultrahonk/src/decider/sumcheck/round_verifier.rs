@@ -47,6 +47,17 @@ impl<P: HonkCurve<TranscriptFieldType>, L: PlainProverFlavour> SumcheckVerifierR
             + indicator * univariate.evaluate(round_challenge);
     }
 
+    pub(crate) fn compute_next_target_sum_zk(
+        &mut self,
+        univariate: &L::SumcheckRoundOutputZK<P::ScalarField>,
+        round_challenge: P::ScalarField,
+        indicator: P::ScalarField,
+    ) {
+        tracing::trace!("Compute target sum");
+        self.target_total_sum = (P::ScalarField::one() - indicator) * self.target_total_sum
+            + indicator * univariate.evaluate(round_challenge);
+    }
+
     pub(crate) fn check_sum(
         &mut self,
         univariate: &L::SumcheckRoundOutput<P::ScalarField>,
@@ -60,16 +71,6 @@ impl<P: HonkCurve<TranscriptFieldType>, L: PlainProverFlavour> SumcheckVerifierR
 
         self.round_failed = self.round_failed || sumcheck_round_failed;
         !sumcheck_round_failed
-    }
-    pub(crate) fn compute_next_target_sum_zk(
-        &mut self,
-        univariate: &L::SumcheckRoundOutputZK<P::ScalarField>,
-        round_challenge: P::ScalarField,
-        indicator: P::ScalarField,
-    ) {
-        tracing::trace!("Compute target sum");
-        self.target_total_sum = (P::ScalarField::one() - indicator) * self.target_total_sum
-            + indicator * univariate.evaluate(round_challenge);
     }
 
     pub(crate) fn check_sum_zk(
