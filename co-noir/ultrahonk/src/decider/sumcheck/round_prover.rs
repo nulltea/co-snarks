@@ -116,8 +116,7 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
     ) -> L::SumcheckRoundOutput<F> {
         tracing::trace!("batch over relations");
 
-        let running_challenge = F::one();
-        L::scale(&mut univariate_accumulators, running_challenge, alphas);
+        L::scale(&mut univariate_accumulators, F::one(), alphas);
 
         let mut res = L::SumcheckRoundOutput::default();
         Self::extend_and_batch_univariates(&mut res, univariate_accumulators, gate_separators);
@@ -131,8 +130,7 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
     ) -> L::SumcheckRoundOutputZK<F> {
         tracing::trace!("batch over relations");
 
-        let running_challenge = F::one();
-        L::scale(&mut univariate_accumulators, running_challenge, alphas);
+        L::scale(&mut univariate_accumulators, F::one(), alphas);
 
         let mut res = L::SumcheckRoundOutputZK::default();
         Self::extend_and_batch_univariates_zk(&mut res, univariate_accumulators, gate_separators);
@@ -178,12 +176,12 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
         );
     }
 
-    fn compute_univariate_inner<P: HonkCurve<TranscriptFieldType, ScalarField = F>>(
+    fn compute_univariate_inner_template<P: HonkCurve<TranscriptFieldType, ScalarField = F>>(
         &self,
         relation_parameters: &RelationParameters<P::ScalarField, L>,
         gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
         polynomials: &AllEntities<Vec<P::ScalarField>, L>,
-    ) -> L::SumcheckRoundOutput<P::ScalarField> {
+    ) -> L::AllRelationAcc<F> {
         // Barretenberg uses multithreading here
 
         // Construct extended edge containers
@@ -206,6 +204,20 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
                 &gate_separators.beta_products[(edge_idx >> 1) * gate_separators.periodicity],
             );
         }
+        univariate_accumulators
+    }
+
+    fn compute_univariate_inner<P: HonkCurve<TranscriptFieldType, ScalarField = F>>(
+        &self,
+        relation_parameters: &RelationParameters<P::ScalarField, L>,
+        gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
+        polynomials: &AllEntities<Vec<P::ScalarField>, L>,
+    ) -> L::SumcheckRoundOutput<P::ScalarField> {
+        let univariate_accumulators = self.compute_univariate_inner_template::<P>(
+            relation_parameters,
+            gate_separators,
+            polynomials,
+        );
 
         Self::batch_over_relations_univariates(
             univariate_accumulators,
@@ -220,28 +232,11 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
         gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
         polynomials: &AllEntities<Vec<P::ScalarField>, L>,
     ) -> L::SumcheckRoundOutputZK<P::ScalarField> {
-        // Barretenberg uses multithreading here
-
-        // Construct extended edge containers
-        let mut extended_edge = ProverUnivariates::<F, L>::default();
-
-        let mut univariate_accumulators = L::AllRelationAcc::<F>::default();
-
-        // Accumulate the contribution from each sub-relation accross each edge of the hyper-cube
-        for edge_idx in (0..self.round_size).step_by(2) {
-            Self::extend_edges(&mut extended_edge, polynomials, edge_idx);
-            // Compute the \f$ \ell \f$-th edge's univariate contribution,
-            // scale it by the corresponding \f$ pow_{\beta} \f$ contribution and add it to the accumulators for \f$
-            // \tilde{S}^i(X_i) \f$. If \f$ \ell \f$'s binary representation is given by \f$ (\ell_{i+1},\ldots,
-            // \ell_{d-1})\f$, the \f$ pow_{\beta}\f$-contribution is \f$\beta_{i+1}^{\ell_{i+1}} \cdot \ldots \cdot
-            // \beta_{d-1}^{\ell_{d-1}}\f$.
-            L::accumulate_relation_univariates::<P>(
-                &mut univariate_accumulators,
-                &extended_edge,
-                relation_parameters,
-                &gate_separators.beta_products[(edge_idx >> 1) * gate_separators.periodicity],
-            );
-        }
+        let univariate_accumulators = self.compute_univariate_inner_template::<P>(
+            relation_parameters,
+            gate_separators,
+            polynomials,
+        );
 
         Self::batch_over_relations_univariates_zk(
             univariate_accumulators,
