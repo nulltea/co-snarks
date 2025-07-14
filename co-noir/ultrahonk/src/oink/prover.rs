@@ -682,10 +682,8 @@ impl<
                 &proving_key.crs,
                 transcript,
             )?;
-            self.has_zk = has_zk;
         }
 
-        // Round is done since ultra_honk is no goblin flavor
         Ok(())
     }
 
@@ -797,7 +795,7 @@ impl<
                 &mut return_data_inverses_tmp,
             );
         }
-        // Round is done since ultra_honk is no goblin flavor
+
         Ok(())
     }
 
