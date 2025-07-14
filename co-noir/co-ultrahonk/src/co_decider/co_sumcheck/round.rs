@@ -138,8 +138,7 @@ impl SumcheckRound {
     ) -> L::SumcheckRoundOutput<T, P> {
         tracing::trace!("batch over relations");
 
-        let running_challenge = P::ScalarField::one();
-        L::scale(&mut univariate_accumulators, running_challenge, alphas);
+        L::scale(&mut univariate_accumulators, P::ScalarField::one(), alphas);
 
         let mut res = L::SumcheckRoundOutput::default();
         Self::extend_and_batch_univariates::<T, P, L>(
@@ -161,8 +160,7 @@ impl SumcheckRound {
     ) -> L::SumcheckRoundOutputZK<T, P> {
         tracing::trace!("batch over relations");
 
-        let running_challenge = P::ScalarField::one();
-        L::scale(&mut univariate_accumulators, running_challenge, alphas);
+        L::scale(&mut univariate_accumulators, P::ScalarField::one(), alphas);
 
         let mut res = L::SumcheckRoundOutputZK::default();
         Self::extend_and_batch_univariates_zk::<T, P, L>(
@@ -200,7 +198,7 @@ impl SumcheckRound {
         )
     }
 
-    pub(crate) fn compute_univariate_inner<
+    fn compute_univariate_inner_template<
         T: NoirUltraHonkProver<P>,
         P: HonkCurve<TranscriptFieldType>,
         N: Network,
@@ -212,7 +210,7 @@ impl SumcheckRound {
         relation_parameters: &RelationParameters<P::ScalarField, L>,
         gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
         polynomials: &AllEntities<Vec<T::ArithmeticShare>, Vec<P::ScalarField>, L>,
-    ) -> HonkProofResult<L::SumcheckRoundOutput<T, P>> {
+    ) -> HonkProofResult<<L as MPCProverFlavour>::AllRelationAcc<T, P>> {
         // Barretenberg uses multithreading here
 
         // Construct extended edge containers
@@ -245,7 +243,29 @@ impl SumcheckRound {
             )?;
             start = end;
         }
-        let univariate_accumulators = L::reshare(univariate_accumulators, net, state)?;
+        L::reshare(univariate_accumulators, net, state)
+    }
+
+    pub(crate) fn compute_univariate_inner<
+        T: NoirUltraHonkProver<P>,
+        P: HonkCurve<TranscriptFieldType>,
+        N: Network,
+        L: MPCProverFlavour,
+    >(
+        &self,
+        net: &N,
+        state: &mut T::State,
+        relation_parameters: &RelationParameters<P::ScalarField, L>,
+        gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
+        polynomials: &AllEntities<Vec<T::ArithmeticShare>, Vec<P::ScalarField>, L>,
+    ) -> HonkProofResult<L::SumcheckRoundOutput<T, P>> {
+        let univariate_accumulators = self.compute_univariate_inner_template(
+            net,
+            state,
+            relation_parameters,
+            gate_separators,
+            polynomials,
+        )?;
 
         let res = Self::batch_over_relations_univariates::<T, P, L>(
             univariate_accumulators,
@@ -268,39 +288,13 @@ impl SumcheckRound {
         gate_separators: &GateSeparatorPolynomial<P::ScalarField>,
         polynomials: &AllEntities<Vec<T::ArithmeticShare>, Vec<P::ScalarField>, L>,
     ) -> HonkProofResult<L::SumcheckRoundOutputZK<T, P>> {
-        // Barretenberg uses multithreading here
-
-        // Construct extended edge containers
-
-        // we have the round size and then reduce it by power of two steps
-        // what can we mt here?
-        // Accumulate the contribution from each sub-relation accross each edge of the hyper-cube
-        // Construct extended edge containers
-
-        //
-        let batch_size = MAX_ROUND_SIZE_PER_BATCH;
-        let mut start = 0;
-        let mut univariate_accumulators = L::AllRelationAccHalfShared::<T, P>::default();
-        while start < self.round_size {
-            let end = (start + batch_size).min(self.round_size);
-            let mut all_entites = L::AllEntitiesBatchRelations::new();
-            for edge_idx in (start..end).step_by(2) {
-                let mut extended_edges = ProverUnivariates::<T, P, L>::default();
-                Self::extend_edges(&mut extended_edges, polynomials, edge_idx);
-                let scaling_factor =
-                    gate_separators.beta_products[(edge_idx >> 1) * gate_separators.periodicity];
-                all_entites.fold_and_filter(extended_edges, scaling_factor);
-            }
-            L::accumulate_relation_univariates_batch(
-                net,
-                state,
-                &mut univariate_accumulators,
-                &all_entites,
-                relation_parameters,
-            )?;
-            start = end;
-        }
-        let univariate_accumulators = L::reshare(univariate_accumulators, net, state)?;
+        let univariate_accumulators = self.compute_univariate_inner_template(
+            net,
+            state,
+            relation_parameters,
+            gate_separators,
+            polynomials,
+        )?;
 
         let res = Self::batch_over_relations_univariates_zk::<T, P, L>(
             univariate_accumulators,
