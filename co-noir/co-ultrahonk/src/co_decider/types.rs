@@ -72,45 +72,53 @@ impl<T: NoirUltraHonkProver<P>, P: Pairing, L: MPCProverFlavour> ProverMemory<T,
         *memory.witness.lookup_read_tags_mut() =
             polynomials.witness.lookup_read_tags().as_ref().to_vec();
         if L::FLAVOUR == Flavour::Mega {
-            *memory.witness.ecc_op_wire_1_mut() =
-                polynomials.witness.ecc_op_wire_1().as_ref().to_vec();
-            *memory.witness.ecc_op_wire_2_mut() =
-                polynomials.witness.ecc_op_wire_2().as_ref().to_vec();
-            *memory.witness.ecc_op_wire_3_mut() =
-                polynomials.witness.ecc_op_wire_3().as_ref().to_vec();
-            *memory.witness.ecc_op_wire_4_mut() =
-                polynomials.witness.ecc_op_wire_4().as_ref().to_vec();
-            *memory.witness.calldata_mut() = polynomials.witness.calldata().as_ref().to_vec();
-            *memory.witness.calldata_read_counts_mut() =
-                polynomials.witness.calldata_read_counts().as_ref().to_vec();
-            *memory.witness.calldata_read_tags_mut() =
-                polynomials.witness.calldata_read_tags().as_ref().to_vec();
+            for (des, src) in izip!(
+                memory
+                    .witness
+                    .iter_mut()
+                    .skip(L::WITNESS_ECC_OP_WIRE_1.expect("ECC_OP_WIRE_1 is not set")),
+                polynomials
+                    .witness
+                    .iter()
+                    .skip(L::ECC_OP_WIRE_1.expect("ECC_OP_WIRE_1 is not set"))
+                    .take(7)
+            ) {
+                *des = src.as_ref().to_vec();
+            }
+
             *memory.witness.calldata_inverses_mut() = prover_memory.calldata_inverses.into_vec();
-            *memory.witness.secondary_calldata_mut() =
-                polynomials.witness.secondary_calldata().as_ref().to_vec();
-            *memory.witness.secondary_calldata_read_counts_mut() = polynomials
-                .witness
-                .secondary_calldata_read_counts()
-                .as_ref()
-                .to_vec();
-            *memory.witness.secondary_calldata_read_tags_mut() = polynomials
-                .witness
-                .secondary_calldata_read_tags()
-                .as_ref()
-                .to_vec();
+
+            for (des, src) in izip!(
+                memory
+                    .witness
+                    .iter_mut()
+                    .skip(L::WITNESS_SECONDARY_CALLDATA.expect("SECONDARY_CALLDATA is not set")),
+                polynomials
+                    .witness
+                    .iter()
+                    .skip(L::SECONDARY_CALLDATA.expect("SECONDARY_CALLDATA is not set"))
+                    .take(3)
+            ) {
+                *des = src.as_ref().to_vec();
+            }
+
             *memory.witness.secondary_calldata_inverses_mut() =
                 prover_memory.secondary_calldata_inverses.into_vec();
-            *memory.witness.return_data_mut() = polynomials.witness.return_data().as_ref().to_vec();
-            *memory.witness.return_data_read_counts_mut() = polynomials
-                .witness
-                .return_data_read_counts()
-                .as_ref()
-                .to_vec();
-            *memory.witness.return_data_read_tags_mut() = polynomials
-                .witness
-                .return_data_read_tags()
-                .as_ref()
-                .to_vec();
+
+            for (des, src) in izip!(
+                memory
+                    .witness
+                    .iter_mut()
+                    .skip(L::WITNESS_RETURN_DATA.expect("RETURN_DATA is not set")),
+                polynomials
+                    .witness
+                    .iter()
+                    .skip(L::RETURN_DATA.expect("RETURN_DATA is not set"))
+                    .take(3)
+            ) {
+                *des = src.as_ref().to_vec();
+            }
+
             *memory.witness.return_data_inverses_mut() =
                 prover_memory.return_data_inverses.into_vec();
         }

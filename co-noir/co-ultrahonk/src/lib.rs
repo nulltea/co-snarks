@@ -25,7 +25,6 @@ pub type Rep3CoBuilder<'a, P, N> =
 pub type ShamirCoBuilder<'a, P, N> =
     GenericUltraCircuitBuilder<P, ShamirAcvmSolver<'a, <P as Pairing>::ScalarField, N>>;
 
-// pub(crate) const NUM_ALPHAS: usize = ultrahonk::NUM_ALPHAS;
 // The log of the max circuit size assumed in order to achieve constant sized Honk proofs
 // AZTEC TODO(https://github.com/AztecProtocol/barretenberg/issues/1046): Remove the need for const sized proofs
 pub(crate) const CONST_PROOF_SIZE_LOG_N: usize = ultrahonk::CONST_PROOF_SIZE_LOG_N;
