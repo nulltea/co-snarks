@@ -19,9 +19,7 @@ pub struct UltraHonk<
     H: TranscriptHasher<TranscriptFieldType>,
     L: PlainProverFlavour,
 > {
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
-    phantom_flavor: PhantomData<L>,
+    phantom_data: PhantomData<(P, H, L)>,
 }
 
 impl<

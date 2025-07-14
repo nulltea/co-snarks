@@ -25,8 +25,7 @@ pub(crate) struct CoDecider<
     pub(crate) state: &'a mut T::State,
     pub(super) memory: ProverMemory<T, P, L>,
     pub(crate) has_zk: ZeroKnowledge,
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
+    phantom_data: PhantomData<(P, H)>,
 }
 
 impl<
@@ -50,7 +49,6 @@ impl<
             memory,
             has_zk,
             phantom_data: PhantomData,
-            phantom_hasher: PhantomData,
         }
     }
 

@@ -43,9 +43,7 @@ pub(crate) struct Oink<
     L: PlainProverFlavour,
 > {
     memory: ProverMemory<P, L>,
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
-    phantom_flavour: PhantomData<L>,
+    phantom_data: PhantomData<(P, H, L)>,
     has_zk: ZeroKnowledge,
     rng: ChaCha12Rng,
 }
@@ -71,8 +69,6 @@ impl<
         Self {
             memory: ProverMemory::default(),
             phantom_data: PhantomData,
-            phantom_hasher: PhantomData,
-            phantom_flavour: PhantomData,
             has_zk,
             rng: ChaCha12Rng::from_entropy(),
         }

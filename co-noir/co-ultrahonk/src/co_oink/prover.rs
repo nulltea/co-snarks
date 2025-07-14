@@ -50,9 +50,7 @@ pub(crate) struct CoOink<
     net: &'a N,
     state: &'a mut T::State,
     memory: ProverMemory<T, P, L>,
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
-    phantom_flavour: PhantomData<L>,
+    phantom_data: PhantomData<(P, H, L)>,
     has_zk: ZeroKnowledge,
 }
 
@@ -71,8 +69,6 @@ impl<
             state,
             memory: ProverMemory::default(),
             phantom_data: PhantomData,
-            phantom_hasher: PhantomData,
-            phantom_flavour: PhantomData,
             has_zk,
         }
     }

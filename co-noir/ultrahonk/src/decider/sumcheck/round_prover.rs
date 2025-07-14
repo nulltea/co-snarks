@@ -21,8 +21,7 @@ use co_builder::prelude::{HonkCurve, RowDisablingPolynomial};
 
 pub(crate) struct SumcheckProverRound<F: PrimeField, L: PlainProverFlavour> {
     pub(crate) round_size: usize,
-    phantom_field: std::marker::PhantomData<F>,
-    phantom_flavour: std::marker::PhantomData<L>,
+    phantom_field: std::marker::PhantomData<(F, L)>,
 }
 
 impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
@@ -30,7 +29,6 @@ impl<F: PrimeField, L: PlainProverFlavour> SumcheckProverRound<F, L> {
         Self {
             round_size: initial_round_size,
             phantom_field: std::marker::PhantomData,
-            phantom_flavour: std::marker::PhantomData,
         }
     }
 

@@ -18,8 +18,7 @@ pub(crate) struct OinkVerifier<
 > {
     memory: VerifierMemory<P, L>,
     pub public_inputs: Vec<P::ScalarField>,
-    phantom_hasher: std::marker::PhantomData<H>,
-    phantom_flavour: std::marker::PhantomData<L>,
+    phantom_hasher: std::marker::PhantomData<(H, L)>,
 }
 
 impl<
@@ -44,7 +43,6 @@ impl<
             memory: VerifierMemory::default(),
             public_inputs: Default::default(),
             phantom_hasher: Default::default(),
-            phantom_flavour: Default::default(),
         }
     }
 

@@ -27,8 +27,7 @@ pub(crate) struct Decider<
     pub(super) memory: ProverMemory<P, L>,
     pub(super) rng: ChaCha12Rng,
     pub(crate) has_zk: ZeroKnowledge,
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
+    phantom_data: PhantomData<(P, H)>,
 }
 
 impl<
@@ -43,7 +42,6 @@ impl<
             rng: ChaCha12Rng::from_entropy(),
             has_zk,
             phantom_data: PhantomData,
-            phantom_hasher: PhantomData,
         }
     }
 

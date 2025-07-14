@@ -21,9 +21,7 @@ pub(crate) struct DeciderVerifier<
     L: PlainProverFlavour,
 > {
     pub(super) memory: VerifierMemory<P, L>,
-    phantom_data: PhantomData<P>,
-    phantom_hasher: PhantomData<H>,
-    phantom_flavour: PhantomData<L>,
+    phantom_data: PhantomData<(P, H, L)>,
 }
 
 impl<
@@ -36,8 +34,6 @@ impl<
         Self {
             memory,
             phantom_data: PhantomData,
-            phantom_hasher: PhantomData,
-            phantom_flavour: PhantomData,
         }
     }
 
