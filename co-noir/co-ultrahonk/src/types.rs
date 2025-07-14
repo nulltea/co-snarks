@@ -88,10 +88,11 @@ impl<
         self.witness.iter().chain(self.shifted_witness.iter())
     }
 
-    //This is not needed I think
-    // pub(crate) fn into_shared_iter(self) -> impl Iterator<Item = Shared> {
-    //     self.witness.into_iter().chain(self.shifted_witness)
-    // }
+    pub(crate) fn into_shared_iter(self) -> impl Iterator<Item = Shared> {
+        self.witness
+            .into_iter()
+            .chain(self.shifted_witness.into_iter())
+    }
 
     pub(crate) fn public_iter_mut(&mut self) -> impl Iterator<Item = &mut Public> {
         self.precomputed.iter_mut()

@@ -112,8 +112,8 @@ impl<
         }
 
         let shared = partially_evaluated_polynomials
-            .shared_iter()
-            .map(|x| x[0].to_owned())
+            .into_shared_iter()
+            .map(|x| x[0])
             .collect::<Vec<_>>();
 
         let opened = T::open_many(&shared, net, state)?;
