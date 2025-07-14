@@ -27,16 +27,16 @@ impl<
 > DeciderVerifier<P, H, L>
 {
     pub fn get_g_shift_evaluations(
-        evaluations: &'_ ClaimedEvaluations<P::ScalarField, L>,
-    ) -> PolyGShift<'_, P::ScalarField, L> {
+        evaluations: &ClaimedEvaluations<P::ScalarField, L>,
+    ) -> PolyGShift<P::ScalarField, L> {
         PolyGShift {
             wires: &evaluations.shifted_witness,
         }
     }
 
     pub fn get_g_shift_comms(
-        evaluations: &'_ VerifierCommitments<P::G1Affine, L>,
-    ) -> PolyG<'_, P::G1Affine> {
+        evaluations: &VerifierCommitments<P::G1Affine, L>,
+    ) -> PolyG<P::G1Affine> {
         PolyG {
             wires: evaluations.witness.to_be_shifted().try_into().unwrap(),
         }
