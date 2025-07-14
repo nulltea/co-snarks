@@ -8,6 +8,7 @@ use std::{
     time::Duration,
 };
 
+use bytesize::ByteSize;
 use channel::{BytesChannel, Channel};
 use codecs::BincodeCodec;
 use color_eyre::eyre::{self, Context, Report};
@@ -224,10 +225,21 @@ impl MpcNetworkHandler {
             writeln!(
                 out,
                 "Connection {} stats:\n\tSENT: {} bytes\n\tRECV: {} bytes",
-                i, stats.udp_tx.bytes, stats.udp_rx.bytes
+                i, ByteSize(stats.udp_tx.bytes), ByteSize(stats.udp_rx.bytes)
             )?;
         }
         Ok(())
+    }
+
+      /// Prints the connection statistics.
+      pub fn log_connection_stats(&self) {
+        for (i, conn) in &self.connections {
+            let stats = conn.stats();
+            tracing::info!(
+                "Connection {} stats: SENT: {} bytes RECV: {} bytes",
+                i, ByteSize(stats.udp_tx.bytes), ByteSize(stats.udp_rx.bytes)
+            );
+        }
     }
 
     /// Sets up a new [BytesChannel] between each party. The resulting map maps the id of the party to its respective [BytesChannel].

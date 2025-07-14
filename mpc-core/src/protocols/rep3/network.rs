@@ -50,26 +50,46 @@ impl<N: Rep3Network> IoContext<N> {
     ) -> IoResult<(Rep3RandBitComp, Rep3RandBitComp)> {
         let (k1a, k1c) = rands.random_seeds();
         let (k2a, k2c) = rands.random_seeds();
-
         match network.get_id() {
             PartyID::ID0 => {
                 network.send_next(k1c)?;
-                let k2b: [u8; crate::SEED_SIZE] = network.recv_prev()?;
-                let bitcomp1 = Rep3RandBitComp::new_2keys(k1a, k1c);
+                let (k1b, k2b): ([u8; crate::SEED_SIZE], [u8; crate::SEED_SIZE]) =
+                    network.recv_prev()?;
+                // tracing::info!(
+                //     "k1a: {}, k1b: {}, k1c: {}",
+                //     hex::encode(k1a),
+                //     hex::encode(k1b),
+                //     hex::encode(k1c)
+                // );
+                let bitcomp1 = Rep3RandBitComp::new_3keys(k1a, k1b, k1c);
                 let bitcomp2 = Rep3RandBitComp::new_3keys(k2a, k2b, k2c);
                 Ok((bitcomp1, bitcomp2))
             }
             PartyID::ID1 => {
                 network.send_next((k1c, k2c))?;
                 let k1b: [u8; crate::SEED_SIZE] = network.recv_prev()?;
+                // tracing::info!(
+                //     "k1a: {}, k1b: {}, k1c: {}",
+                //     hex::encode(k1a),
+                //     hex::encode(k1b),
+                //     hex::encode(k1c)
+                // );
+
                 let bitcomp1 = Rep3RandBitComp::new_3keys(k1a, k1b, k1c);
                 let bitcomp2 = Rep3RandBitComp::new_2keys(k2a, k2c);
                 Ok((bitcomp1, bitcomp2))
             }
             PartyID::ID2 => {
-                network.send_next(k2c)?;
+                network.send_next((k1c, k2c))?;
                 let (k1b, k2b): ([u8; crate::SEED_SIZE], [u8; crate::SEED_SIZE]) =
                     network.recv_prev()?;
+                // tracing::info!(
+                //     "k1a: {}, k1b: {}, k1c: {}",
+                //     hex::encode(k1a),
+                //     hex::encode(k1b),
+                //     hex::encode(k1c)
+                // );
+
                 let bitcomp1 = Rep3RandBitComp::new_3keys(k1a, k1b, k1c);
                 let bitcomp2 = Rep3RandBitComp::new_3keys(k2a, k2b, k2c);
                 Ok((bitcomp1, bitcomp2))
@@ -244,107 +264,119 @@ pub trait Rep3Network: Send {
         Self: Sized;
 }
 
-// TODO make generic over codec?
-/// This struct can be used to facilitate network communication for the REP3 MPC protocol.
-#[derive(Debug)]
-pub struct Rep3MpcNet {
-    pub(crate) id: PartyID,
-    pub(crate) chan_next: ChannelHandle<Bytes, BytesMut>,
-    pub(crate) chan_prev: ChannelHandle<Bytes, BytesMut>,
-    pub(crate) net_handler: Arc<MpcNetworkHandlerWrapper>,
-}
+pub type Rep3MpcNet = mpc_net::rep3::quic::Rep3QuicMpcNetWorker;
 
-impl Rep3MpcNet {
-    /// Takes a [NetworkConfig] struct and constructs the network interface. The network needs to contain exactly 3 parties with ids 0, 1, and 2.
-    pub fn new(config: NetworkConfig) -> Result<Self, Report> {
-        if config.parties.len() != 3 {
-            bail!("REP3 protocol requires exactly 3 parties")
-        }
-        let id = PartyID::try_from(config.my_id)?;
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()?;
-        let (net_handler, chan_next, chan_prev) = runtime.block_on(async {
-            let net_handler = MpcNetworkHandler::establish(config).await?;
-            let mut channels = net_handler.get_byte_channels().await?;
-            let chan_next = channels
-                .remove(&id.next_id().into())
-                .ok_or(eyre!("no next channel found"))?;
-            let chan_prev = channels
-                .remove(&id.prev_id().into())
-                .ok_or(eyre!("no prev channel found"))?;
-            if !channels.is_empty() {
-                bail!("unexpected channels found")
-            }
+// // TODO make generic over codec?
+// /// This struct can be used to facilitate network communication for the REP3 MPC protocol.
+// #[derive(Debug)]
+// pub struct Rep3MpcNet {
+//     pub(crate) id: PartyID,
+//     pub(crate) chan_next: ChannelHandle<Bytes, BytesMut>,
+//     pub(crate) chan_prev: ChannelHandle<Bytes, BytesMut>,
+//     pub(crate) net_handler: Arc<MpcNetworkHandlerWrapper>,
+// }
 
-            let chan_next = ChannelHandle::manage(chan_next);
-            let chan_prev = ChannelHandle::manage(chan_prev);
-            Ok((net_handler, chan_next, chan_prev))
-        })?;
-        Ok(Self {
-            id,
-            net_handler: Arc::new(MpcNetworkHandlerWrapper::new(runtime, net_handler)),
-            chan_next,
-            chan_prev,
-        })
-    }
+// impl Rep3MpcNet {
+//     /// Takes a [NetworkConfig] struct and constructs the network interface. The network needs to contain exactly 3 parties with ids 0, 1, and 2.
+//     pub fn new(config: NetworkConfig) -> Result<Self, Report> {
+//         if config.parties.len() != 3 {
+//             bail!("REP3 protocol requires exactly 3 parties")
+//         }
+//         let id = PartyID::try_from(config.my_id)?;
+//         let runtime = tokio::runtime::Builder::new_multi_thread()
+//             .enable_all()
+//             .build()?;
+//         let (net_handler, chan_next, chan_prev) = runtime.block_on(async {
+//             let net_handler = MpcNetworkHandler::establish(config).await?;
+//             let mut channels = net_handler.get_byte_channels().await?;
+//             let chan_next = channels
+//                 .remove(&id.next_id().into())
+//                 .ok_or(eyre!("no next channel found"))?;
+//             let chan_prev = channels
+//                 .remove(&id.prev_id().into())
+//                 .ok_or(eyre!("no prev channel found"))?;
+//             if !channels.is_empty() {
+//                 bail!("unexpected channels found")
+//             }
 
-    /// Sends bytes over the network to the target party.
-    pub fn send_bytes(&mut self, target: PartyID, data: Bytes) -> std::io::Result<()> {
-        if target == self.id.next_id() {
-            std::mem::drop(self.chan_next.blocking_send(data));
-            Ok(())
-        } else if target == self.id.prev_id() {
-            std::mem::drop(self.chan_prev.blocking_send(data));
-            Ok(())
-        } else {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Cannot send to self",
-            ));
-        }
-    }
+//             let chan_next = ChannelHandle::manage(chan_next);
+//             let chan_prev = ChannelHandle::manage(chan_prev);
+//             Ok((net_handler, chan_next, chan_prev))
+//         })?;
+//         Ok(Self {
+//             id,
+//             net_handler: Arc::new(MpcNetworkHandlerWrapper::new(runtime, net_handler)),
+//             chan_next,
+//             chan_prev,
+//         })
+//     }
 
-    /// Receives bytes over the network from the party with the given id.
-    pub fn recv_bytes(&mut self, from: PartyID) -> std::io::Result<BytesMut> {
-        let data = if from == self.id.prev_id() {
-            self.chan_prev.blocking_recv().blocking_recv()
-        } else if from == self.id.next_id() {
-            self.chan_next.blocking_recv().blocking_recv()
-        } else {
-            return Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                "Cannot recv from self",
-            ));
-        };
-        let data = data.map_err(|_| {
-            std::io::Error::new(std::io::ErrorKind::BrokenPipe, "receive channel end died")
-        })??;
-        Ok(data)
-    }
-}
+//     /// Sends bytes over the network to the target party.
+//     pub fn send_bytes(&mut self, target: PartyID, data: Bytes) -> std::io::Result<()> {
+//         if target == self.id.next_id() {
+//             std::mem::drop(self.chan_next.blocking_send(data));
+//             Ok(())
+//         } else if target == self.id.prev_id() {
+//             std::mem::drop(self.chan_prev.blocking_send(data));
+//             Ok(())
+//         } else {
+//             return Err(std::io::Error::new(
+//                 std::io::ErrorKind::InvalidInput,
+//                 "Cannot send to self",
+//             ));
+//         }
+//     }
+
+//     /// Receives bytes over the network from the party with the given id.
+//     pub fn recv_bytes(&mut self, from: PartyID) -> std::io::Result<BytesMut> {
+//         let data = if from == self.id.prev_id() {
+//             self.chan_prev.blocking_recv().blocking_recv()
+//         } else if from == self.id.next_id() {
+//             self.chan_next.blocking_recv().blocking_recv()
+//         } else {
+//             return Err(std::io::Error::new(
+//                 std::io::ErrorKind::InvalidInput,
+//                 "Cannot recv from self",
+//             ));
+//         };
+//         let data = data.map_err(|_| {
+//             std::io::Error::new(std::io::ErrorKind::BrokenPipe, "receive channel end died")
+//         })??;
+//         Ok(data)
+//     }
+
+//     /// Print the connection stats of the network
+//     pub fn print_connection_stats(&self, out: &mut impl std::io::Write) -> std::io::Result<()> {
+//         self.net_handler.inner.print_connection_stats(out)
+//     }
+
+//     /// Print the connection stats of the network
+//     pub fn log_connection_stats(&self) {
+//         self.net_handler.inner.log_connection_stats()
+//     }
+// }
 
 impl Rep3Network for Rep3MpcNet {
     fn get_id(&self) -> PartyID {
-        self.id
+        self.id.party_id()
     }
 
     fn reshare_many<F: CanonicalSerialize + CanonicalDeserialize>(
         &mut self,
         data: &[F],
     ) -> std::io::Result<Vec<F>> {
-        self.send_many(self.id.next_id(), data)?;
-        self.recv_many(self.id.prev_id())
+        self.send_many(self.get_id().next_id(), data)?;
+        self.recv_many(self.get_id().prev_id())
     }
 
     fn broadcast_many<F: CanonicalSerialize + CanonicalDeserialize>(
         &mut self,
         data: &[F],
     ) -> std::io::Result<(Vec<F>, Vec<F>)> {
-        self.send_many(self.id.next_id(), data)?;
-        self.send_many(self.id.prev_id(), data)?;
-        let recv_next = self.recv_many(self.id.next_id())?;
-        let recv_prev = self.recv_many(self.id.prev_id())?;
+        self.send_many(self.get_id().next_id(), data)?;
+        self.send_many(self.get_id().prev_id(), data)?;
+        let recv_next = self.recv_many(self.get_id().next_id())?;
+        let recv_prev = self.recv_many(self.get_id().prev_id())?;
         Ok((recv_prev, recv_next))
     }
 
@@ -370,16 +402,16 @@ impl Rep3Network for Rep3MpcNet {
     }
 
     fn fork(&mut self) -> std::io::Result<Self> {
-        let id = self.id;
+        let id = self.id.clone();
         let net_handler = Arc::clone(&self.net_handler);
         let (chan_next, chan_prev) = net_handler.runtime.block_on(async {
             let mut channels = net_handler.inner.get_byte_channels().await?;
 
             let chan_next = channels
-                .remove(&id.next_id().into())
+                .remove(&id.party_id().next_id().into())
                 .expect("to find next channel");
             let chan_prev = channels
-                .remove(&id.prev_id().into())
+                .remove(&id.party_id().prev_id().into())
                 .expect("to find prev channel");
             if !channels.is_empty() {
                 panic!("unexpected channels found")
@@ -395,6 +427,9 @@ impl Rep3Network for Rep3MpcNet {
             net_handler,
             chan_next,
             chan_prev,
+            chan_coordinator: None,
+            log_num_pub_workers: 0,
+            log_num_workers_per_party: 0,
         })
     }
 }

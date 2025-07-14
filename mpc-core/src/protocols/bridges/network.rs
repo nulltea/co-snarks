@@ -22,14 +22,17 @@ impl RepToShamirNetwork<ShamirMpcNet> for Rep3MpcNet {
             net_handler,
             chan_next,
             chan_prev,
+            chan_coordinator,
+            log_num_pub_workers,
+            log_num_workers_per_party,
         } = self;
 
         let mut channels = HashMap::with_capacity(2);
-        channels.insert(id.next_id().into(), chan_next);
-        channels.insert(id.prev_id().into(), chan_prev);
+        channels.insert(id.party_id().next_id().into(), chan_next);
+        channels.insert(id.party_id().prev_id().into(), chan_prev);
 
         ShamirMpcNet {
-            id: id.into(),
+            id: id.party_id().into(),
             num_parties: 3,
             net_handler,
             channels,

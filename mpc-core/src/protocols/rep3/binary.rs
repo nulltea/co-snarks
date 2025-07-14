@@ -4,7 +4,9 @@
 
 use ark_ff::{One, PrimeField};
 use itertools::{Itertools as _, izip};
+use mpc_types::protocols::rep3::combine_binary_element;
 use num_bigint::BigUint;
+use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
     IoResult,
@@ -405,4 +407,39 @@ pub(crate) fn is_zero_many<F: PrimeField, N: Rep3Network>(
         *x_ &= BigUint::one();
     }
     Ok(x)
+}
+
+/// Converts a vector of bits in little-endian order to a share.
+pub fn from_le_bits<F: PrimeField>(bits: &[BinaryShare<F>]) -> BinaryShare<F> {
+    bits.iter()
+        .rev()
+        .fold(BinaryShare::zero_share(), |int, bit| shift_l_public(&int, F::one()) ^ bit.clone())
+}
+
+/// Shares a binary secret using the Rep3 protocol.
+pub fn share_rep3_binary<F: PrimeField, R: Rng>(secret: BigUint, rng: &mut R) -> [Rep3BigUintShare<F>; 3] {
+    let a1 = BigUint::from(rng.r#gen::<u64>());
+    let a2 = BigUint::from(rng.r#gen::<u64>());
+    
+
+    let a3 = (secret ^ a1.clone()) ^ a2.clone();
+
+    let s1 = Rep3BigUintShare::new(a1.clone(), a2.clone());
+    let s2 = Rep3BigUintShare::new(a2, a3.clone());
+    let s3 = Rep3BigUintShare::new(a3, a1);
+
+    [s1, s2, s3]
+}
+
+#[test]
+fn test_share_rep3_binary() {
+    let secret1 = BigUint::from(123u64);
+    let secret2 = BigUint::from(456u64);
+    let rng = &mut StdRng::from_seed(Default::default());
+    let shares1 = share_rep3_binary::<ark_bn254::Fr, _>(secret1.clone(), rng);
+    let shares2 = share_rep3_binary::<ark_bn254::Fr, _>(secret2.clone(), rng);
+    let shares = [shares1[0].clone() ^ shares2[0].clone(), shares1[1].clone() ^ shares2[1].clone(), shares1[2].clone() ^ shares2[2].clone()];
+
+    let combined = combine_binary_element(shares[0].clone(), shares[1].clone(), shares[2].clone());
+    assert_eq!(combined, secret1 ^ secret2);
 }

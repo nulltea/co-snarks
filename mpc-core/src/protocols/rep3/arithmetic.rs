@@ -157,6 +157,47 @@ pub fn reshare_vec<F: PrimeField, N: Rep3Network>(
         .collect())
 }
 
+/// Performs multiplication of two shared values and rehares via PRSS.
+// pub fn local_mul<F: PrimeField>(
+//     party_id: PartyID,
+//     lhs: &Rep3PrimeFieldShare<F>,
+//     rhs: &Rep3PrimeFieldShare<F>,
+//     rngs: &mut Rep3CorrelatedRng,
+// ) -> Rep3PrimeFieldShare<F> {
+//     let additive_share = lhs * rhs;
+//     local_additive_to_rep3(party_id, additive_share, rngs)
+// }
+
+// /// Locally promotes an additive share to a replicated share via PRSS.
+// pub fn local_additive_to_rep3<F: PrimeField>(
+//     party_id: PartyID,
+//     additive_share: F,
+//     rngs: &mut Rep3CorrelatedRng,
+// ) -> Rep3PrimeFieldShare<F> {
+//     // original triple (no zero-sum guarantee)
+//     let (r01, r12, r20) = rngs.bitcomp1.random_fes_3keys::<F>();
+
+//     // make it zero-sum
+//     let z01 = r01 - r12;
+//     let z12 = r12 - r20;
+//     let z20 = r20 - r01;     // z01 + z12 + z20 == 0
+
+//     match party_id {
+//         PartyID::ID0 => Rep3PrimeFieldShare {        // holds ⟨s01,s20⟩
+//             a: additive_share + z01,
+//             b: z01,
+//         },
+//         PartyID::ID1 => Rep3PrimeFieldShare {        // holds ⟨s01,s12⟩
+//             a: z12,
+//             b: z12,
+//         },
+//         PartyID::ID2 => Rep3PrimeFieldShare {        // holds ⟨s12,s20⟩
+//             a: z20,
+//             b: z20,
+//         },
+//     }
+// }
+
 /// Performs element-wise multiplication of two vectors of shared values.
 ///
 /// Use this function for small vecs. For large vecs see [`local_mul_vec`] and [`reshare_vec`]
@@ -331,6 +372,14 @@ pub fn promote_to_trivial_share<F: PrimeField>(id: PartyID, public_value: F) -> 
         PartyID::ID1 => Rep3PrimeFieldShare::new(F::zero(), public_value),
         PartyID::ID2 => Rep3PrimeFieldShare::zero_share(),
     }
+}
+
+/// Transforms a vector of public values into a vector of shared values: \[a\] = a.
+pub fn promote_to_trivial_shares<F: PrimeField>(public_values: Vec<F>, id: PartyID) -> Vec<FieldShare<F>> {
+    public_values
+        .into_iter()
+        .map(|value| promote_to_trivial_share(id, value))
+        .collect()
 }
 
 /// This function performs a multiplication directly followed by an opening. This safes one round of communication in some MPC protocols compared to calling `mul` and `open` separately.

@@ -103,6 +103,33 @@ impl<N: Rep3Network> Rep3LookupTable<N> {
         Ok(result)
     }
 
+    /// This is an optimized protocol that takes multiple public LUTs and looks them up with the same index. It only creates the OHV once.
+    pub fn get_from_public_luts_no_a2b_conversion<F: PrimeField>(
+        index: Rep3BigUintShare<F>,
+        luts: &[Vec<F>],
+        network0: &mut IoContext<N>,
+        network1: &mut IoContext<N>,
+    ) -> IoResult<Vec<Rep3PrimeFieldShare<F>>> {
+        let len = luts.iter().map(|l| l.len()).max().unwrap();
+        tracing::debug!("doing read on LUT-map of size {}", len);
+        let bits = index;
+        let k = len.next_power_of_two().ilog2() as usize;
+
+        let result = if k == 1 {
+            Self::get_from_public_luts_internal::<Bit, _>(bits, luts, network0, network1)?
+        } else if k <= 8 {
+            Self::get_from_public_luts_internal::<u8, _>(bits, luts, network0, network1)?
+        } else if k <= 16 {
+            Self::get_from_public_luts_internal::<u16, _>(bits, luts, network0, network1)?
+        } else if k <= 32 {
+            Self::get_from_public_luts_internal::<u32, _>(bits, luts, network0, network1)?
+        } else {
+            panic!("Table is too large")
+        };
+        tracing::debug!("got a result!");
+        Ok(result)
+    }
+
     fn get_from_public_luts_internal<T: IntRing2k, F: PrimeField>(
         index: Rep3BigUintShare<F>,
         luts: &[Vec<F>],
@@ -197,6 +224,34 @@ impl<N: Rep3Network> Rep3LookupTable<N> {
         }
     }
 
+    /// This is a protocol which reads from a shared LUT without converting the result back to the arithmetic domain.
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub fn get_from_lut_no_a2b_conversion<F: PrimeField>(
+        index: Rep3BigUintShare<F>,
+        lut: &PublicPrivateLut<F>,
+        network0: &mut IoContext<N>,
+        network1: &mut IoContext<N>,
+    ) -> IoResult<Rep3PrimeFieldShare<F>> {
+        let len = lut.len();
+        tracing::debug!("doing read on LUT-map of size {}", len);
+        let bits = index;
+        let k = len.next_power_of_two().ilog2() as usize;
+
+        let result = if k == 1 {
+            Self::get_from_lut_internal::<Bit, _>(bits, lut, network0, network1)?
+        } else if k <= 8 {
+            Self::get_from_lut_internal::<u8, _>(bits, lut, network0, network1)?
+        } else if k <= 16 {
+            Self::get_from_lut_internal::<u16, _>(bits, lut, network0, network1)?
+        } else if k <= 32 {
+            Self::get_from_lut_internal::<u32, _>(bits, lut, network0, network1)?
+        } else {
+            panic!("Table is too large")
+        };
+        tracing::debug!("got a result!");
+        Ok(result)
+    }
+
     fn write_to_lut_internal<T: IntRing2k, F: PrimeField>(
         index: Rep3BigUintShare<F>,
         lut: &mut PublicPrivateLut<F>,
@@ -267,9 +322,35 @@ impl<N: Rep3Network> Rep3LookupTable<N> {
         conversion::bit_inject_from_bits_to_field_many::<F, _>(&e, network0)
     }
 
+    /// Creates a shared one-hot-encoded vector from a given shared index
+    #[tracing::instrument(skip_all, level = "trace")]
+    pub fn ohv_from_index_no_a2b_conversion<F: PrimeField>(
+        index: Rep3BigUintShare<F>,
+        len: usize,
+        network0: &mut IoContext<N>,
+        network1: &mut IoContext<N>,
+    ) -> IoResult<Vec<Rep3PrimeFieldShare<F>>> {
+        let bits = index;
+        let k = len.next_power_of_two().ilog2() as usize;
+
+        let e = if k == 1 {
+            Self::ohv_from_index_internal::<Bit, _>(bits, k, network0, network1)?
+        } else if k <= 8 {
+            Self::ohv_from_index_internal::<u8, _>(bits, k, network0, network1)?
+        } else if k <= 16 {
+            Self::ohv_from_index_internal::<u16, _>(bits, k, network0, network1)?
+        } else if k <= 32 {
+            Self::ohv_from_index_internal::<u32, _>(bits, k, network0, network1)?
+        } else {
+            panic!("Table is too large")
+        };
+
+        conversion::bit_inject_from_bits_to_field_many::<F, _>(&e, network0)
+    }
+
     /// Writes to a shared lookup table with the index already being transformed into the shared one-hot-encoded vector
+    #[tracing::instrument(skip_all, level = "trace")]
     pub fn write_to_shared_lut_from_ohv<F: PrimeField>(
-        &mut self,
         ohv: &[Rep3PrimeFieldShare<F>],
         value: Rep3PrimeFieldShare<F>,
         lut: &mut [Rep3PrimeFieldShare<F>],
@@ -283,12 +364,54 @@ impl<N: Rep3Network> Rep3LookupTable<N> {
         Ok(())
     }
 
+    /// Writes to a shared lookup table with the index already being transformed into the shared one-hot-encoded vector
+    pub fn get_from_shared_lut_from_ohv<F: PrimeField>(
+        ohv: &[Rep3PrimeFieldShare<F>],
+        lut: &[Rep3PrimeFieldShare<F>],
+        network0: &mut IoContext<N>,
+        _network1: &mut IoContext<N>,
+    ) -> IoResult<Rep3PrimeFieldShare<F>> {
+        let f_a = gadgets::lut::read_shared_lut_from_ohv(lut, ohv, network0)?;
+        let f_b = network0.network.reshare(f_a)?;
+        Ok(Rep3PrimeFieldShare::new(f_a, f_b))
+    }
+
     /// Returns true if LUT is public
     pub fn is_public_lut<F: PrimeField>(lut: &PublicPrivateLut<F>) -> bool {
         match lut {
             PublicPrivateLut::Public(_) => true,
             PublicPrivateLut::Shared(_) => false,
         }
+    }
+
+    /// This is a protocol which writes to a shared lookup table without converting the index to the shared one-hot-encoded vector.
+    pub fn write_to_lut_no_a2b_conversion<F: PrimeField>(
+        &mut self,
+        index: Rep3BigUintShare<F>,
+        value: Rep3PrimeFieldShare<F>,
+        lut: &mut PublicPrivateLut<F>,
+        network0: &mut IoContext<N>,
+        network1: &mut IoContext<N>,
+    ) -> IoResult<()> {
+        let len = lut.len();
+        tracing::debug!("doing write on LUT-map of size {}", len);
+        let bits = index;
+        let k = len.next_power_of_two().ilog2();
+
+        if k == 1 {
+            Self::write_to_lut_internal::<Bit, _>(bits, lut, &value, network0, network1)?
+        } else if k <= 8 {
+            Self::write_to_lut_internal::<u8, _>(bits, lut, &value, network0, network1)?
+        } else if k <= 16 {
+            Self::write_to_lut_internal::<u16, _>(bits, lut, &value, network0, network1)?
+        } else if k <= 32 {
+            Self::write_to_lut_internal::<u32, _>(bits, lut, &value, network0, network1)?
+        } else {
+            panic!("Table is too large")
+        };
+
+        tracing::debug!("we are done");
+        Ok(())
     }
 }
 

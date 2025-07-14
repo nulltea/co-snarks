@@ -66,6 +66,16 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
         }
     }
 
+    /// Double the share in place
+    pub fn square(&self) -> F {
+        self * self
+    }
+
+    /// Converts the share into an additive share.
+    pub fn into_additive(self) -> F {
+        (self.a + self.b) / F::from(2u8)
+    }
+
     // /// Generate a random share
     // pub fn rand<N: Rep3Network>(io_context: &mut IoContext<N>) -> Self {
     //     let (a, b) = io_context.rngs.rand.random_fes();

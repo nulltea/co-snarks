@@ -770,6 +770,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d71b6127be86fdcfddb610f7182ac57211d4b18a3e9c82eb2d17662f2227ad6a"
 
 [[package]]
+name = "bytesize"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3c8f83209414aacf0eeae3cf730b18d6981697fba62f200fcfb92b9f082acba"
+
+[[package]]
 name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2803,6 +2809,7 @@ dependencies = [
  "criterion",
  "eyre",
  "fancy-garbling",
+ "hex",
  "itertools 0.14.0",
  "mpc-net",
  "mpc-types",
@@ -2826,11 +2833,15 @@ dependencies = [
 name = "mpc-net"
 version = "0.4.0"
 dependencies = [
+ "ark-serialize",
  "bincode",
  "bytes",
+ "bytesize",
  "clap",
  "color-eyre",
+ "eyre",
  "futures",
+ "mpc-types",
  "quinn",
  "rcgen",
  "rustls",

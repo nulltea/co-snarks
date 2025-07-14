@@ -249,25 +249,19 @@ where
     Ok(t)
 }
 
-/// Takes a secret-shared lookup table containing field elements, and a replicated binary share of an index and puts another secret-shared field element (value) and puts it at lut`\[`index`\]`.
-/// The algorithm is inspired by Protocol 4 from [https://eprint.iacr.org/2024/1317.pdf](https://eprint.iacr.org/2024/1317.pdf).
-pub fn write_lut<F: PrimeField, T: IntRing2k, N: Rep3Network>(
-    value: &Rep3PrimeFieldShare<F>,
-    lut: &mut [Rep3PrimeFieldShare<F>],
-    index: Rep3RingShare<T>,
+/// Takes a secret-shared lookup table containing field elements, and a shared one-hot-encoded vector and returns a non-replicated additive sharing of the looked up value lut`\[`index`\]`
+pub fn read_shared_lut_from_ohv<F: PrimeField, N: Rep3Network>(
+    lut: &[Rep3PrimeFieldShare<F>],
+    ohv: &[Rep3PrimeFieldShare<F>],
     io_context: &mut IoContext<N>,
-) -> IoResult<()>
-where
-    Standard: Distribution<T>,
-{
-    let n = lut.len();
-    let k = n.next_power_of_two().ilog2() as usize;
-    assert!(k <= T::K);
-
-    let e = gadgets::ohv::ohv::<T, _>(k, index, io_context)?;
-    let injected = conversion::bit_inject_from_bits_to_field_many::<F, _>(&e, io_context)?;
-
-    write_lut_from_ohv(value, lut, &injected, io_context)
+) -> IoResult<F> {
+    // Start the result with a random mask (for potential resharing later)
+    let mut t = io_context.rngs.rand.masking_field_element::<F>();
+    for (l, e) in lut.iter().zip(ohv.into_iter()) {
+        let mul = e * l;
+        t += mul;
+    }
+    Ok(t)
 }
 
 /// The second part of writing to a shared lookup table, i.e, takes the shared value, the shared LUT and and one_hot_vector (all elements 0 except for the index to write to which is set to one) and writes to the shared LUT.
@@ -290,4 +284,25 @@ pub fn write_lut_from_ohv<F: PrimeField, N: Rep3Network>(
         des.b = src_b;
     }
     Ok(())
+}
+
+/// Takes a secret-shared lookup table containing field elements, and a replicated binary share of an index and puts another secret-shared field element (value) and puts it at lut`\[`index`\]`.
+/// The algorithm is inspired by Protocol 4 from [https://eprint.iacr.org/2024/1317.pdf](https://eprint.iacr.org/2024/1317.pdf).
+pub fn write_lut<F: PrimeField, T: IntRing2k, N: Rep3Network>(
+    value: &Rep3PrimeFieldShare<F>,
+    lut: &mut [Rep3PrimeFieldShare<F>],
+    index: Rep3RingShare<T>,
+    io_context: &mut IoContext<N>,
+) -> IoResult<()>
+where
+    Standard: Distribution<T>,
+{
+    let n = lut.len();
+    let k = n.next_power_of_two().ilog2() as usize;
+    assert!(k <= T::K);
+
+    let e = gadgets::ohv::ohv::<T, _>(k, index, io_context)?;
+    let injected = conversion::bit_inject_from_bits_to_field_many::<F, _>(&e, io_context)?;
+
+    write_lut_from_ohv(value, lut, &injected, io_context)
 }

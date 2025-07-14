@@ -494,6 +494,7 @@ pub fn combine_binary_element<F: PrimeField>(
     share1.a ^ share2.a ^ share3.a
 }
 
+
 /// Reconstructs a curve point from its arithmetic replicated shares.
 pub fn combine_curve_point<C: CurveGroup>(
     share1: Rep3PointShare<C>,

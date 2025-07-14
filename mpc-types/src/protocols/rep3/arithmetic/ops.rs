@@ -138,3 +138,13 @@ impl<F: PrimeField> ark_ff::Zero for Rep3PrimeFieldShare<F> {
         );
     }
 }
+
+impl<F: PrimeField> std::iter::Sum<Rep3PrimeFieldShare<F>> for Rep3PrimeFieldShare<F> {
+    fn sum<I: Iterator<Item = Rep3PrimeFieldShare<F>>>(iter: I) -> Self {
+        let mut sum = Rep3PrimeFieldShare::<F>::zero_share();
+        for share in iter {
+            sum += share;
+        }
+        sum
+    }
+}
