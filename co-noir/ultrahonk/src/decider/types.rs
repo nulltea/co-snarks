@@ -25,10 +25,6 @@ pub(crate) struct VerifierMemory<P: Pairing, L: PlainProverFlavour> {
     pub(crate) claimed_evaluations: ClaimedEvaluations<P::ScalarField, L>,
 }
 
-// pub(crate) const MAX_PARTIAL_RELATION_LENGTH: usize = 7;
-// pub(crate) const BATCHED_RELATION_PARTIAL_LENGTH: usize = MAX_PARTIAL_RELATION_LENGTH + 1;
-// pub(crate) const BATCHED_RELATION_PARTIAL_LENGTH_ZK: usize = BATCHED_RELATION_PARTIAL_LENGTH + 1;
-
 pub(crate) type ProverUnivariates<F, L> =
     AllEntities<<L as PlainProverFlavour>::ProverUnivariate<F>, L>;
 pub(crate) type ProverUnivariatesSized<F, L, const SIZE: usize> =
