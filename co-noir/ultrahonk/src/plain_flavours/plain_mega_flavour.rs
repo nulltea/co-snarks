@@ -1,5 +1,3 @@
-use std::array;
-
 use crate::decider::relations::databus_lookup_relation::DataBusLookupRelationEvals;
 use crate::decider::relations::ecc_op_queue_relation::EccOpQueueRelationEvals;
 use crate::decider::sumcheck::round_prover::SumcheckProverRound;
@@ -41,6 +39,7 @@ use co_builder::HonkProofResult;
 use co_builder::flavours::mega_flavour::MegaFlavour;
 use co_builder::prelude::HonkCurve;
 use co_builder::prover_flavour::ProverFlavour;
+use std::array;
 
 #[derive(Default)]
 pub struct AllRelationAccMega<F: PrimeField> {
@@ -68,6 +67,62 @@ pub struct AllRelationEvaluationsMega<F: PrimeField> {
     pub(crate) r_databus: DataBusLookupRelationEvals<F>,
     pub(crate) r_pos_ext: Poseidon2ExternalRelationEvals<F>,
     pub(crate) r_pos_int: Poseidon2InternalRelationEvals<F>,
+}
+
+fn extend_and_batch_univariates_template<F: PrimeField, const SIZE: usize>(
+    acc: &AllRelationAccMega<F>,
+    result: &mut Univariate<F, SIZE>,
+    extended_random_poly: &Univariate<F, SIZE>,
+    partial_evaluation_result: &F,
+) {
+    tracing::trace!("Prove::Extend and batch univariates");
+    acc.r_arith.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_perm.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_lookup.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_delta.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_elliptic.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_aux
+        .extend_and_batch_univariates(result, extended_random_poly, partial_evaluation_result);
+    acc.r_ecc_op_queue.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_databus.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_pos_ext.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
+    acc.r_pos_int.extend_and_batch_univariates(
+        result,
+        extended_random_poly,
+        partial_evaluation_result,
+    );
 }
 
 impl PlainProverFlavour for MegaFlavour {
@@ -118,57 +173,14 @@ impl PlainProverFlavour for MegaFlavour {
         partial_evaluation_result: &F,
     ) {
         tracing::trace!("Prove::Extend and batch univariates");
-        acc.r_arith.extend_and_batch_univariates(
+        extend_and_batch_univariates_template(
+            acc,
             result,
             extended_random_poly,
             partial_evaluation_result,
-        );
-        acc.r_perm.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_lookup.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_delta.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_elliptic.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_aux.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_ecc_op_queue.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_databus.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_ext.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_int.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
+        )
     }
+
     fn extend_and_batch_univariates_zk<F: PrimeField>(
         acc: &Self::AllRelationAcc<F>,
         result: &mut Self::SumcheckRoundOutputZK<F>,
@@ -176,56 +188,12 @@ impl PlainProverFlavour for MegaFlavour {
         partial_evaluation_result: &F,
     ) {
         tracing::trace!("Prove::Extend and batch univariates");
-        acc.r_arith.extend_and_batch_univariates(
+        extend_and_batch_univariates_template(
+            acc,
             result,
             extended_random_poly,
             partial_evaluation_result,
-        );
-        acc.r_perm.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_lookup.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_delta.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_elliptic.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_aux.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_ecc_op_queue.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_databus.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_ext.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
-        acc.r_pos_int.extend_and_batch_univariates(
-            result,
-            extended_random_poly,
-            partial_evaluation_result,
-        );
+        )
     }
 
     fn accumulate_relation_univariates<P: HonkCurve<TranscriptFieldType>>(
@@ -327,6 +295,7 @@ impl PlainProverFlavour for MegaFlavour {
             scaling_factor,
         );
     }
+
     fn accumulate_relation_evaluations<P: HonkCurve<TranscriptFieldType>>(
         univariate_accumulators: &mut Self::AllRelationEvaluations<P::ScalarField>,
         extended_edges: &ClaimedEvaluations<P::ScalarField, Self>,
@@ -409,6 +378,7 @@ impl PlainProverFlavour for MegaFlavour {
             scaling_factor,
         );
     }
+
     fn scale_and_batch_elements<F: PrimeField>(
         all_rel_evals: &Self::AllRelationEvaluations<F>,
         first_scalar: F,
