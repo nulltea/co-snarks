@@ -451,6 +451,7 @@ impl<P: Pairing> ProvingKey<P, UltraFlavour> {
         Ok(())
     }
 }
+
 impl<P: Pairing, L: ProverFlavour> ProvingKey<P, L> {
     pub fn new(
         circuit_size: usize,
