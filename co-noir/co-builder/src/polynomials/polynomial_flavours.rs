@@ -1,8 +1,6 @@
 // proverwitnessentities and precomputed entities, also witnessentities
 
 pub trait PrecomputedEntitiesFlavour<T: Default> {
-    // type PrecomputedEntity<T: Default>: Default;
-
     fn new() -> Self;
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
@@ -89,8 +87,8 @@ pub trait PrecomputedEntitiesFlavour<T: Default> {
     fn id_3_mut(&mut self) -> &mut T;
     fn id_4_mut(&mut self) -> &mut T;
 }
+
 pub trait WitnessEntitiesFlavour<T: Default> {
-    // type WitnessEntity<T: Default>: Default;
     fn new() -> Self;
 
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
@@ -215,6 +213,7 @@ pub trait WitnessEntitiesFlavour<T: Default> {
         panic!("This should not be called with the UltraFlavor");
     }
 }
+
 pub trait ShiftedWitnessEntitiesFlavour<T: Default> {
     fn new() -> Self;
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
