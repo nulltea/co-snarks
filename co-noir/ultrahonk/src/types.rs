@@ -61,6 +61,13 @@ impl<T: Default + Clone + std::marker::Sync, L: PlainProverFlavour> Default for 
 }
 
 impl<T: Default + Clone + std::marker::Sync, L: PlainProverFlavour> AllEntities<T, L> {
+    pub(crate) fn into_iter(self) -> impl Iterator<Item = T> {
+        self.precomputed
+            .into_iter()
+            .chain(self.witness.into_iter())
+            .chain(self.shifted_witness.into_iter())
+    }
+
     pub(crate) fn iter(&self) -> impl Iterator<Item = &T> {
         self.precomputed
             .iter()

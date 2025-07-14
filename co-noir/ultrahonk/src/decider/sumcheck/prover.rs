@@ -67,7 +67,7 @@ impl<
 
         #[expect(unused_mut)] // TACEO TODO: This is for the linter, remove once its fixed...
         for (src, mut des) in partially_evaluated_polynomials
-            .iter()
+            .into_iter()
             .zip(multivariate_evaluations.iter_mut())
         {
             *des = src[0];
