@@ -428,7 +428,6 @@ impl Rep3Network for Rep3MpcNet {
             chan_next,
             chan_prev,
             chan_coordinator: None,
-            log_num_pub_workers: 0,
             log_num_workers_per_party: 0,
             config: self.config.clone(),
         })
