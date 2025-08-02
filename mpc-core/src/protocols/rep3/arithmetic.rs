@@ -157,6 +157,23 @@ pub fn reshare_vec<F: PrimeField, N: Rep3Network>(
         .collect())
 }
 
+/// Performs a reshare on all shares in the vector.
+pub async fn reshare_vec_async<F: PrimeField, N: Rep3Network>(
+    local_a: Vec<F>,
+    io_context: &mut IoContext<N>,
+) -> IoResult<Vec<FieldShare<F>>> {
+    let local_b = io_context.network.reshare_many_async(local_a.clone()).await?;
+    if local_b.len() != local_a.len() {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "During execution of reshare_vec: Invalid number of elements received",
+        ));
+    }
+    Ok(izip!(local_a, local_b)
+        .map(|(a, b)| FieldShare::new(a, b))
+        .collect())
+}
+
 /// Performs multiplication of two shared values and rehares via PRSS.
 // pub fn local_mul<F: PrimeField>(
 //     party_id: PartyID,
@@ -211,6 +228,19 @@ pub fn mul_vec<F: PrimeField, N: Rep3Network>(
         .map(|(lhs, rhs)| lhs * rhs + io_context.rngs.rand.masking_field_element::<F>())
         .collect_vec();
     reshare_vec(local_a, io_context)
+}
+
+/// Performs element-wise multiplication of two vectors of shared values.
+pub async fn mul_vec_async<F: PrimeField, N: Rep3Network>(
+    lhs: Vec<FieldShare<F>>,
+    rhs: Vec<FieldShare<F>>,
+    io_context: &mut IoContext<N>,
+) -> IoResult<Vec<FieldShare<F>>> {
+    debug_assert_eq!(lhs.len(), rhs.len());
+    let local_a = izip!(lhs.iter(), rhs.iter())
+        .map(|(lhs, rhs)| lhs * rhs + io_context.rngs.rand.masking_field_element::<F>())
+        .collect_vec();
+    reshare_vec_async(local_a, io_context).await
 }
 
 /// Performs division of two shared values, returning a / b.

@@ -95,7 +95,7 @@ toml = "0.8.13"
 tracing = { version = "0.1.40" }
 tracing-subscriber = "0.3"
 
-mpc-net = { version = "0.4.0", path = "../../co-spartan-noir/mpc-net" }
+mpc-net = { version = "0.4.0", path = "../co-noir-spartan/mpc-net" }
 
 # This profile can be used for CI in pull requests.
 [profile.ci-dev]

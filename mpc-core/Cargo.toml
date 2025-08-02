@@ -26,6 +26,7 @@ eyre = { workspace = true }
 fancy-garbling = { git = "https://github.com/GaloisInc/swanky", rev = "5ff648457218b74da9d8323b7ca47166ff5be4b3" }
 itertools = { workspace = true }
 mpc-net.workspace = true
+# mpc-net = { path = "../co-noir-spartan/mpc-net" }
 mpc-types = { version = "0.1.0", path = "../mpc-types" }
 num-bigint = { workspace = true }
 num-traits = { workspace = true }
@@ -41,6 +42,7 @@ tracing.workspace = true
 thiserror = { workspace = true }
 nom = { workspace = true }
 hex = "0.4"
+async-trait = "0.1"
 
 [dev-dependencies]
 ark-std = { workspace = true }
