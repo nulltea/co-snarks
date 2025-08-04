@@ -231,6 +231,26 @@ pub fn mul_vec<F: PrimeField, N: Rep3Network>(
 }
 
 /// Performs element-wise multiplication of two vectors of shared values.
+pub fn mul_vec_par<F: PrimeField, N: Rep3Network>(
+    lhs: &[FieldShare<F>],
+    rhs: &[FieldShare<F>],
+    io_context: &mut IoContext<N>,
+) -> IoResult<Vec<FieldShare<F>>> {
+    debug_assert_eq!(lhs.len(), rhs.len());
+    let rngs = tracing::trace_span!("rngs").in_scope(|| {
+        (0..lhs.len())
+            .map(|_| io_context.rngs.rand.masking_field_element::<F>())
+            .collect_vec()
+    });
+    let local_a = tracing::trace_span!("cpu mul par").in_scope(|| {
+        lhs.par_iter().zip(rhs.par_iter()).zip(rngs.par_iter())
+            .map(|((lhs, rhs), rng)| lhs * rhs + rng)
+            .collect()
+    });
+    reshare_vec(local_a, io_context)
+}
+
+/// Performs element-wise multiplication of two vectors of shared values.
 pub async fn mul_vec_async<F: PrimeField, N: Rep3Network>(
     lhs: Vec<FieldShare<F>>,
     rhs: Vec<FieldShare<F>>,
@@ -334,15 +354,12 @@ pub fn open_bit<F: PrimeField, N: Rep3Network>(
 }
 
 /// Performs the opening of a shared value and returns the equivalent public value.
-pub fn open_vec<F: PrimeField, N: Rep3Network>(
-    a: &[FieldShare<F>],
+pub fn open_vec<'a, F: PrimeField, N: Rep3Network>(
+    a: impl IntoIterator<Item = &'a FieldShare<F>>,
     io_context: &mut IoContext<N>,
 ) -> IoResult<Vec<F>> {
-    // TODO think about something better... it is not so bad
-    // because we use it exactly once in PLONK where we do it for 4
-    // shares..
+    let a = a.into_iter();
     let (a, b) = a
-        .iter()
         .map(|share| (share.a, share.b))
         .collect::<(Vec<F>, Vec<F>)>();
     let c = io_context.network.reshare_many(&b)?;
