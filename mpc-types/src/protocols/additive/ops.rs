@@ -30,28 +30,6 @@ impl<F: PrimeField> std::ops::AddAssign<&AdditivePrimeFieldShare<F>> for Additiv
     }
 }
 
-impl<F: PrimeField> std::ops::Add<F> for AdditivePrimeFieldShare<F> {
-    type Output = AdditivePrimeFieldShare<F>;
-
-    fn add(self, rhs: F) -> Self::Output {
-        Self(self.0 + rhs)
-    }
-}
-
-impl<F: PrimeField> std::ops::Add<F> for &AdditivePrimeFieldShare<F> {
-    type Output = AdditivePrimeFieldShare<F>;
-
-    fn add(self, rhs: F) -> Self::Output {
-        *self + rhs
-    }
-}
-
-impl<F: PrimeField> std::ops::AddAssign<F> for AdditivePrimeFieldShare<F> {
-    fn add_assign(&mut self, rhs: F) {
-        self.0 += rhs;
-    }
-}
-
 impl<F: PrimeField> std::ops::Sub for AdditivePrimeFieldShare<F> {
     type Output = Self;
 
@@ -74,27 +52,6 @@ impl<F: PrimeField> std::ops::SubAssign<AdditivePrimeFieldShare<F>> for Additive
     }
 }
 
-impl<F: PrimeField> std::ops::Sub<F> for AdditivePrimeFieldShare<F> {
-    type Output = AdditivePrimeFieldShare<F>;
-
-    fn sub(self, rhs: F) -> Self::Output {
-        Self(self.0 - rhs)
-    }
-}
-
-impl<F: PrimeField> std::ops::Sub<F> for &AdditivePrimeFieldShare<F> {
-    type Output = AdditivePrimeFieldShare<F>;
-
-    fn sub(self, rhs: F) -> Self::Output {
-        *self - rhs
-    }
-}
-
-impl<F: PrimeField> std::ops::SubAssign<F> for AdditivePrimeFieldShare<F> {
-    fn sub_assign(&mut self, rhs: F) {
-        self.0 -= rhs;
-    }
-}
 
 impl<F: PrimeField> std::ops::Mul<F> for AdditivePrimeFieldShare<F> {
     type Output = AdditivePrimeFieldShare<F>;

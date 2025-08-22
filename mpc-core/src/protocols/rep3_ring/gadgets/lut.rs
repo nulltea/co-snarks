@@ -275,13 +275,13 @@ pub fn write_lut_from_ohv<F: PrimeField, N: Rep3Network>(
     assert!(n <= ohv.len());
     let mut local_a = Vec::with_capacity(n);
     for (l, e) in lut.iter().zip(ohv.iter()) {
-        local_a.push(e * &(value - l) + l.a + io_context.rngs.rand.masking_field_element::<F>());
+        local_a.push((e * &(value - l)).into_fe() + l.a + io_context.rngs.rand.masking_field_element::<F>());
     }
     let local_b = io_context.network.reshare_many(&local_a)?;
 
     for (des, (src_a, src_b)) in lut.iter_mut().zip(local_a.into_iter().zip(local_b)) {
-        des.a = src_a.into_fe();
-        des.b = src_b.into_fe();
+        des.a = src_a;
+        des.b = src_b;
     }
     Ok(())
 }

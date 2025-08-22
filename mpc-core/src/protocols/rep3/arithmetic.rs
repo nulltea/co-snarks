@@ -104,7 +104,7 @@ pub fn mul<F: PrimeField, N: Rep3Network>(
     b: FieldShare<F>,
     io_context: &mut IoContext<N>,
 ) -> IoResult<FieldShare<F>> {
-    let local_a = (a * b + io_context.rngs.rand.masking_field_element::<F>()).into_fe();
+    let local_a = (a * b).into_fe() + io_context.rngs.rand.masking_field_element::<F>();
     let local_b = io_context.network.reshare(local_a)?;
     Ok(FieldShare {
         a: local_a,
@@ -137,7 +137,7 @@ pub fn local_mul_vec<F: PrimeField>(
     (lhs, rhs, masking_fes)
         .into_par_iter()
         .with_min_len(1024)
-        .map(|(lhs, rhs, masking)| lhs * rhs + masking)
+        .map(|(lhs, rhs, masking)| AdditivePrimeFieldShare::from_fe((lhs * rhs).into_fe() + masking))
         .collect()
 }
 
@@ -226,7 +226,7 @@ pub fn mul_vec<F: PrimeField, N: Rep3Network>(
 ) -> IoResult<Vec<FieldShare<F>>> {
     debug_assert_eq!(lhs.len(), rhs.len());
     let local_a = izip!(lhs.iter(), rhs.iter())
-        .map(|(lhs, rhs)| (lhs * rhs + io_context.rngs.rand.masking_field_element::<F>()).into_fe())
+        .map(|(lhs, rhs)| (lhs * rhs).into_fe() + io_context.rngs.rand.masking_field_element::<F>())
         .collect_vec();
     reshare_vec(local_a, io_context)
 }
@@ -245,7 +245,7 @@ pub fn mul_vec_par<F: PrimeField, N: Rep3Network>(
     });
     let local_a = tracing::trace_span!("cpu mul par").in_scope(|| {
         lhs.par_iter().zip(rhs.par_iter()).zip(rngs.par_iter())
-            .map(|((lhs, rhs), rng)| (lhs * rhs + *rng).into_fe())
+            .map(|((lhs, rhs), rng)| (lhs * rhs).into_fe() + *rng)
             .collect()
     });
     reshare_vec(local_a, io_context)
@@ -392,7 +392,7 @@ pub fn cmux_vec<F: PrimeField, N: Rep3Network>(
     let result_a = truthy
         .iter()
         .zip(falsy.iter())
-        .map(|(t, f)| (sub(*t, *f) * cond + f.a + io_context.rngs.rand.masking_field_element::<F>()).into_fe())
+        .map(|(t, f)| (sub(*t, *f) * cond).into_fe() + f.a + io_context.rngs.rand.masking_field_element::<F>())
         .collect_vec();
     reshare_vec(result_a, io_context)
 }
@@ -436,7 +436,7 @@ pub fn mul_open<F: PrimeField, N: Rep3Network>(
     b: FieldShare<F>,
     io_context: &mut IoContext<N>,
 ) -> IoResult<F> {
-    let a = (a * b + io_context.rngs.rand.masking_field_element::<F>()).into_fe();
+    let a = (a * b).into_fe() + io_context.rngs.rand.masking_field_element::<F>();
     let (b, c) = io_context.network.broadcast(a)?;
     Ok(a + b + c)
 }
@@ -448,7 +448,7 @@ pub fn mul_open_vec<F: PrimeField, N: Rep3Network>(
     io_context: &mut IoContext<N>,
 ) -> IoResult<Vec<F>> {
     let mut a = izip!(a, b)
-        .map(|(a, b)| (a * b + io_context.rngs.rand.masking_field_element::<F>()).into_fe())
+        .map(|(a, b)| (a * b).into_fe() + io_context.rngs.rand.masking_field_element::<F>())
         .collect_vec();
     let (b, c) = io_context.network.broadcast_many(&a)?;
     izip!(a.iter_mut(), b, c).for_each(|(a, b, c)| *a += b + c);
@@ -845,10 +845,10 @@ pub(crate) fn arithmetic_xor<F: PrimeField, N: Rep3Network>(
     y: Rep3PrimeFieldShare<F>,
     io_context: &mut IoContext<N>,
 ) -> IoResult<Rep3PrimeFieldShare<F>> {
-    let mut d = x * y + io_context.rngs.rand.masking_field_element::<F>();
+    let mut d = (x * y).into_fe() + io_context.rngs.rand.masking_field_element::<F>();
     d.double_in_place();
     let e = x.a + y.a;
-    let res_a = e - d.into_fe();
+    let res_a = e - d;
 
     let res_b = io_context.network.reshare(res_a)?;
     Ok(FieldShare { a: res_a, b: res_b })
@@ -863,10 +863,10 @@ pub(crate) fn arithmetic_xor_many<F: PrimeField, N: Rep3Network>(
 
     let mut a = Vec::with_capacity(x.len());
     for (x, y) in x.iter().zip(y.iter()) {
-        let mut d = x * y + io_context.rngs.rand.masking_field_element::<F>();
+        let mut d = (x * y).into_fe() + io_context.rngs.rand.masking_field_element::<F>();
         d.double_in_place();
         let e = x.a + y.a;
-        let res_a = e - d.into_fe();
+        let res_a = e - d;
         a.push(res_a);
     }
 
