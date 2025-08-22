@@ -1,4 +1,4 @@
-use ark_ff::{PrimeField};
+use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +18,7 @@ use crate::protocols::rep3::id::PartyID;
     Serialize,
     Deserialize,
 )]
+#[repr(transparent)]
 pub struct AdditivePrimeFieldShare<F: PrimeField>(pub(crate) F);
 
 impl<F: PrimeField> Default for AdditivePrimeFieldShare<F> {
@@ -30,10 +31,6 @@ impl<F: PrimeField> AdditivePrimeFieldShare<F> {
     /// Constructs a zero share.
     pub fn zero() -> Self {
         Self(F::zero())
-    }
-
-    pub fn is_zero(&self) -> bool {
-        self.0.is_zero()
     }
 
     /// Double the share in place
@@ -63,5 +60,61 @@ impl<F: PrimeField> AdditivePrimeFieldShare<F> {
     /// Casts a field element into an additive share. Don't use this to `promote_from_trivial`.
     pub fn from_fe(value: F) -> Self {
         Self(value)
+    }
+
+    /// Casts a vector of additive shares into a vector of field elements.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it assumes that the size and alignment of `AdditivePrimeFieldShare<F>` and `F` are the same.
+    #[inline]
+    pub fn into_fe_vec(mut v: Vec<AdditivePrimeFieldShare<F>>) -> Vec<F> {
+        debug_assert_eq!(
+            std::mem::size_of::<AdditivePrimeFieldShare<F>>(),
+            std::mem::size_of::<F>()
+        );
+        debug_assert_eq!(
+            std::mem::align_of::<AdditivePrimeFieldShare<F>>(),
+            std::mem::align_of::<F>()
+        );
+        let ptr = v.as_mut_ptr() as *mut F;
+        let len = v.len();
+        let cap = v.capacity();
+        std::mem::forget(v);
+        unsafe { Vec::from_raw_parts(ptr, len, cap) }
+    }
+
+    /// Casts a vector of field elements into a vector of additive shares.
+    ///
+    /// # Safety
+    ///
+    /// This function is unsafe because it assumes that the size and alignment of `AdditivePrimeFieldShare<F>` and `F` are the same.
+    #[inline]
+    pub fn from_fe_vec(mut v: Vec<F>) -> Vec<AdditivePrimeFieldShare<F>> {
+        debug_assert_eq!(
+            std::mem::size_of::<AdditivePrimeFieldShare<F>>(),
+            std::mem::size_of::<F>()
+        );
+        debug_assert_eq!(
+            std::mem::align_of::<AdditivePrimeFieldShare<F>>(),
+            std::mem::align_of::<F>()
+        );
+        let ptr = v.as_mut_ptr() as *mut AdditivePrimeFieldShare<F>;
+        let len = v.len();
+        let cap = v.capacity();
+        std::mem::forget(v);
+        unsafe { Vec::from_raw_parts(ptr, len, cap) }
+    }
+
+    /// Returns a view of the underlying field elements.
+    #[inline]
+    pub fn as_fe_vec_mut(s: &mut [AdditivePrimeFieldShare<F>]) -> &mut [F] {
+        unsafe { std::slice::from_raw_parts_mut(s.as_mut_ptr() as *mut F, s.len()) }
+    }
+
+    /// Returns a view of the underlying field elements.
+    #[inline]
+    pub fn as_fe_vec_ref(s: &[AdditivePrimeFieldShare<F>]) -> &[F] {
+        unsafe { std::slice::from_raw_parts(s.as_ptr() as *const F, s.len()) }
     }
 }
