@@ -27,6 +27,15 @@ impl<F: PrimeField> Default for AdditivePrimeFieldShare<F> {
 }
 
 impl<F: PrimeField> AdditivePrimeFieldShare<F> {
+    /// Constructs a zero share.
+    pub fn zero() -> Self {
+        Self(F::zero())
+    }
+
+    pub fn is_zero(&self) -> bool {
+        self.0.is_zero()
+    }
+
     /// Double the share in place
     pub fn double_in_place(&mut self) {
         self.0.double_in_place();
@@ -49,5 +58,10 @@ impl<F: PrimeField> AdditivePrimeFieldShare<F> {
     /// Casts the additive share into a field element. Use with caution.
     pub fn into_fe(self) -> F {
         self.0
+    }
+
+    /// Casts a field element into an additive share. Don't use this to `promote_from_trivial`.
+    pub fn from_fe(value: F) -> Self {
+        Self(value)
     }
 }

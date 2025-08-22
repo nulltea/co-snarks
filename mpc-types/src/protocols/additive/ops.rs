@@ -126,16 +126,6 @@ impl<F: PrimeField> std::ops::Neg for AdditivePrimeFieldShare<F> {
     }
 }
 
-impl<F: PrimeField> Zero for AdditivePrimeFieldShare<F> {
-    fn zero() -> Self {
-        Self(F::zero())
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
-    }
-}
-
 impl<F: PrimeField> std::iter::Sum<AdditivePrimeFieldShare<F>> for AdditivePrimeFieldShare<F> {
     fn sum<I: Iterator<Item = AdditivePrimeFieldShare<F>>>(iter: I) -> Self {
         let mut sum = Self::zero();
