@@ -329,7 +329,7 @@ impl<F: PrimeField, const T: usize, const D: u64> Poseidon2<F, T, D> {
         let qu = arithmetic::mul(sq, sq, driver)?;
 
         // Quint
-        *input = qu * share;
+        *input = (qu * share).into_fe();
 
         Ok(())
     }
@@ -447,7 +447,7 @@ impl<F: PrimeField, const T: usize, const D: u64> Poseidon2<F, T, D> {
         let qu = arithmetic::mul_vec(&sq, &sq, driver)?;
 
         // Quint
-        let res = array::from_fn(|i| qu[i] * input[i]);
+        let res = array::from_fn(|i| (qu[i] * input[i]).into_fe());
         Ok(res)
     }
 

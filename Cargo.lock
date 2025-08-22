@@ -1100,7 +1100,7 @@ dependencies = [
  "figment",
  "mpc-core",
  "mpc-net",
- "mpc-types",
+ "mpc-types 0.1.0",
  "num-bigint 0.4.6",
  "num-traits",
  "rand 0.8.5",
@@ -1121,7 +1121,7 @@ dependencies = [
  "ark-serialize",
  "circom-types",
  "eyre",
- "mpc-types",
+ "mpc-types 0.1.0",
  "num-bigint 0.4.6",
  "num-traits",
  "rand 0.8.5",
@@ -2812,7 +2812,7 @@ dependencies = [
  "hex",
  "itertools 0.14.0",
  "mpc-net",
- "mpc-types",
+ "mpc-types 0.1.0",
  "nom",
  "num-bigint 0.4.6",
  "num-traits",
@@ -2841,8 +2841,10 @@ dependencies = [
  "color-eyre",
  "eyre",
  "futures",
- "mpc-types",
+ "mpc-types 0.1.0 (git+https://github.com/nulltea/co-snarks)",
+ "once_cell",
  "quinn",
+ "rayon",
  "rcgen",
  "rustls",
  "serde",
@@ -2857,6 +2859,23 @@ name = "mpc-types"
 version = "0.1.0"
 dependencies = [
  "ark-bn254",
+ "ark-ec",
+ "ark-ff",
+ "ark-serialize",
+ "eyre",
+ "itertools 0.14.0",
+ "num-bigint 0.4.6",
+ "num-traits",
+ "rand 0.8.5",
+ "rand_chacha 0.3.1",
+ "serde",
+]
+
+[[package]]
+name = "mpc-types"
+version = "0.1.0"
+source = "git+https://github.com/nulltea/co-snarks#3f84417fc08120f604fec2d7f0cfb281416c518d"
+dependencies = [
  "ark-ec",
  "ark-ff",
  "ark-serialize",

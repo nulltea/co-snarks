@@ -2,6 +2,7 @@ use ark_ff::PrimeField;
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use serde::{Deserialize, Serialize};
 
+use crate::protocols::additive::AdditivePrimeFieldShare;
 use crate::protocols::rep3::id::PartyID;
 use crate::serde_compat::{ark_de, ark_se};
 
@@ -67,7 +68,7 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
     }
 
     /// Double the share in place
-    pub fn square(&self) -> F {
+    pub fn square(&self) -> AdditivePrimeFieldShare<F> {
         self * self
     }
 

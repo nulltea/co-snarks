@@ -244,7 +244,7 @@ where
     let mut t = io_context.rngs.rand.masking_field_element::<F>();
     for (l, e) in lut.iter().zip(injected.into_iter()) {
         let mul = &e * l;
-        t += mul;
+        t += mul.into_fe();
     }
     Ok(t)
 }
@@ -259,7 +259,7 @@ pub fn read_shared_lut_from_ohv<F: PrimeField, N: Rep3Network>(
     let mut t = io_context.rngs.rand.masking_field_element::<F>();
     for (l, e) in lut.iter().zip(ohv.into_iter()) {
         let mul = e * l;
-        t += mul;
+        t += mul.into_fe();
     }
     Ok(t)
 }
@@ -280,8 +280,8 @@ pub fn write_lut_from_ohv<F: PrimeField, N: Rep3Network>(
     let local_b = io_context.network.reshare_many(&local_a)?;
 
     for (des, (src_a, src_b)) in lut.iter_mut().zip(local_a.into_iter().zip(local_b)) {
-        des.a = src_a;
-        des.b = src_b;
+        des.a = src_a.into_fe();
+        des.b = src_b.into_fe();
     }
     Ok(())
 }
