@@ -23,8 +23,8 @@ impl RepToShamirNetwork<ShamirMpcNet> for Rep3MpcNet {
             chan_next,
             chan_prev,
             chan_coordinator,
-            log_num_pub_workers,
             log_num_workers_per_party,
+            ..
         } = self;
 
         let mut channels = HashMap::with_capacity(2);

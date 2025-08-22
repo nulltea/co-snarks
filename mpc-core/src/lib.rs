@@ -4,7 +4,7 @@
 
 #![warn(missing_docs)]
 
-pub mod gadgets;
+// pub mod gadgets;
 pub mod lut;
 pub mod protocols;
 
