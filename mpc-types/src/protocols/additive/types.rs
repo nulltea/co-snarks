@@ -117,4 +117,35 @@ impl<F: PrimeField> AdditivePrimeFieldShare<F> {
     pub fn as_fe_vec_ref(s: &[AdditivePrimeFieldShare<F>]) -> &[F] {
         unsafe { std::slice::from_raw_parts(s.as_ptr() as *const F, s.len()) }
     }
+
+    /// Multiplies the share by a public field element.
+    #[inline(always)]
+    pub fn mul_public_0_optimized(self, other: F) -> Self {
+        if other.is_zero() {
+            Self::zero()
+        } else {
+            self * other
+        }
+    }
+
+    /// Multiplies the share by a public field element.
+    #[inline(always)]
+    pub fn mul_public_1_optimized(self, other: F) -> Self {
+        if other.is_one() {
+            self
+        } else {
+            self * other
+        }
+    }
+
+    /// Multiplies the share by a public field element.
+    #[inline(always)]
+    pub fn mul_public_01_optimized(self, other: F) -> Self {
+        if other.is_zero() {
+            Self::zero()
+        } else {
+            self.mul_public_1_optimized(other)
+        }
+    }
 }
+
