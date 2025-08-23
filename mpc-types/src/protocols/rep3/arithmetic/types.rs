@@ -1,4 +1,4 @@
-use ark_ff::PrimeField;
+use ark_ff::{BigInteger, PrimeField};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use serde::{Deserialize, Serialize};
 
@@ -34,7 +34,11 @@ impl<F: PrimeField> Default for Rep3PrimeFieldShare<F> {
     }
 }
 
-impl<F: PrimeField> Rep3PrimeFieldShare<F> {
+pub trait PrimeFieldTwoInv {
+    const TWO_INV: Self;
+}
+
+impl<F: PrimeField> Rep3PrimeFieldShare<F> {   
     /// Constructs the type from two additive shares.
     pub fn new(a: F, b: F) -> Self {
         Self { a, b }
@@ -73,8 +77,8 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
     }
 
     /// Converts the share into an additive share.
-    pub fn into_additive(self) -> AdditivePrimeFieldShare<F> {
-        AdditivePrimeFieldShare(self.a + self.b)
+    pub fn into_additive(self) -> AdditivePrimeFieldShare<F> where F: PrimeFieldTwoInv {
+        AdditivePrimeFieldShare((self.a + self.b) * F::TWO_INV)
     }
 
     // /// Generate a random share
