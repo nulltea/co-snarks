@@ -74,7 +74,7 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
 
     /// Converts the share into an additive share.
     pub fn into_additive(self) -> AdditivePrimeFieldShare<F> {
-        AdditivePrimeFieldShare((self.a + self.b) / F::from(2u8))
+        AdditivePrimeFieldShare(self.a + self.b)
     }
 
     // /// Generate a random share
@@ -92,3 +92,4 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
         }
     }
 }
+
