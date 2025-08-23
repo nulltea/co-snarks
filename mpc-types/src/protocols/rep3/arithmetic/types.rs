@@ -92,4 +92,3 @@ impl<F: PrimeField> Rep3PrimeFieldShare<F> {
         }
     }
 }
-

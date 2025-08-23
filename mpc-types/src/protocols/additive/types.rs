@@ -46,12 +46,12 @@ impl<F: PrimeField> AdditivePrimeFieldShare<F> {
     /// Promotes a public field element to a replicated share by setting the additive share of the party with id=0 and leaving all other shares to be 0. Thus, the replicated shares of party 0 and party 1 are set.
     pub fn promote_from_trivial(public_value: F, id: PartyID) -> Self {
         match id {
-            PartyID::ID0 => Self(public_value),
+            PartyID::ID0 => Self(public_value.double()),
             PartyID::ID1 => Self(F::zero()),
             PartyID::ID2 => Self(F::zero()),
         }
     }
-
+    
     /// Casts the additive share into a field element. Use with caution.
     pub fn into_fe(self) -> F {
         self.0
